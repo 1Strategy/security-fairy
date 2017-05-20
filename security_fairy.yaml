@@ -7,33 +7,44 @@ Parameters:
     Default: email@domain.com
     Description: The email where SNS notifications will be sent
 Resources:
+  SecurityFairy:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: SecurityFairy
+      Subscription:
+        -
+          Endpoint:
+            Ref: SNSEmail
+          Protocol: "email"
+      TopicName: security_fairy_topic
 
-athenaQueryLambda:
-  Type: AWS::Serverless::Function
-  Properties:
-    FunctionName: 'security_fairy_athena_query_lambda'
-    CodeUri: .
-    Description: 'This function queries Athena to determine '
-    Handler: security_fairy_athena_query_lambda.lambda_handler
-    MemorySize: 128
-    Policies:
-    - AmazonAthenaFullAccess
-    Runtime: python3.6
-    Timeout: 30
 
-ServerlessMergeParallel:
-  Type: AWS::Serverless::Function
-  Properties:
-    FunctionName: 'serverless_merge_parallel'
-    CodeUri: .
-    Description: ''
-    Handler: serverless_merge_parallel.lambda_handler
-    MemorySize: 128
-    Policies:
-    - AmazonAthenaFullAccess
-    - AmazonDynamoDBFullAccess
-    Runtime: python3.6
-    Timeout: 30
+  AthenaQueryLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_athena_query'
+      CodeUri: .
+      Description: 'This function queries Athena to determine '
+      Handler: security_fairy_athena_query.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonAthenaFullAccess
+      Runtime: python3.6
+      Timeout: 30
+
+  ServerlessMergeParallel:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'serverless_merge_parallel'
+      CodeUri: .
+      Description: ''
+      Handler: serverless_merge_parallel.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonAthenaFullAccess
+      - AmazonDynamoDBFullAccess
+      Runtime: python3.6
+      Timeout: 30
 
 
   StateMachine:
