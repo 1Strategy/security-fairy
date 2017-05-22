@@ -7,6 +7,7 @@ try:
     session = boto3.session.Session(profile_name='training')
 except Exception as e:
     session = boto3.session.Session()
+
 # Connect to Athena
 athena = session.client('athena', region_name = 'us-east-1')
 

@@ -11,11 +11,11 @@ except Exception as e:
 # Connect to Athena
 
 # Requested permissions
-# Create New Policy
+
 # Get existing permissions
-# Generate a diff
+
 # DynamoToken (QueryId)
-# Push to DynamoDB
+
 # Pass token
 
 #for testing Athena Query Id:
@@ -25,36 +25,47 @@ def lambda_handler(event, context):
     query_execution_id = event.get('query_execution_id')
 
     if query_execution_id is None:
-        raise("Lambda Function requires 'query_execution_id' to execute.")
+        raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
+# Get Query Results
     raw_query_result = get_query_results(query_execution_id)
-
+# Get Existing policies
+# Create New Policy
+# Generate a diff
+# Push to DynamoDB
 
 def get_query_results(query_execution_id):
 
     athena_client = session.client('athena', region_name = 'us-east-1')
-
     result_set = []
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
         for result in results["ResultSet"]["Rows"][1:]:
             result_set.append(result["Data"])
+
     except ClientError as e:
         raise(e)
 
     print(result_set)
     return result_set
 
-def extract_service_level_permissions(results):
+
+def get_permissions_from_query(results):
     pass
+
 
 def build_revised_policy(entity_arn):
     iam_client = session.client('iam')
 
 
-def build_revised_policy():
-    pass
+def write_policies_to_dynamodb(, context):
+
+    dynamodb_table = event['dynamodb_table']
+
+    dynamodb_client = boto3.client('dynamodb', region_name='us-west-2')
+    dynamodb_client.put_item(TableName='security_fairy_pending_approval',
+                             Item={})
 
 
 if __name__ == '__main__':
