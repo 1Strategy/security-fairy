@@ -18,8 +18,11 @@ except Exception as e:
 
 # Pass token
 
-#for testing Athena Query Id:
-# query_execution_id = 52e009f3-5a3a-4226-b562-dc9316a2995d
+"""
+for testing Athena Query Id:
+    query_execution_id = 52e009f3-5a3a-4226-b562-dc9316a2995d
+"""
+
 
 def lambda_handler(event, context):
     query_execution_id = event.get('query_execution_id')
@@ -34,9 +37,10 @@ def lambda_handler(event, context):
 # Generate a diff
 # Push to DynamoDB
 
+
 def get_query_results(query_execution_id):
 
-    athena_client = session.client('athena', region_name = 'us-east-1')
+    athena_client = session.client('athena', region_name='us-east-1')
     result_set = []
 
     try:
@@ -71,4 +75,4 @@ def write_policies_to_dynamodb(, context):
 if __name__ == '__main__':
     lambda_handler({
         'query_execution_id': '52e009f3-5a3a-4226-b562-dc9316a2995d'
-    },{})
+    }, {})
