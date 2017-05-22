@@ -3,7 +3,7 @@ import boto3
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='sandbox')
 except Exception as e:
     session = boto3.session.Session()
 

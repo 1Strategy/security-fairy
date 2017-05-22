@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='sandbox')
 except Exception as e:
     session = boto3.session.Session()
 
@@ -40,7 +40,6 @@ def execute_query(entity_arn, num_days):
            , useridentity.arn
        limit 50
     """.format(num_days=num_days, entity_arn=entity_arn)
-    print(hql)
 
     # Execute Query
     execution = athena.start_query_execution(QueryString=hql,
