@@ -63,11 +63,12 @@ def get_query_results(query_execution_id):
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
+        print(results)
         for result in results["ResultSet"]["Rows"][1:]:
             result_set.append(result["Data"])
 
     except ClientError as e:
-        raise(e)
+        print(e)
 
     return result_set
 
@@ -83,8 +84,9 @@ def get_existing_entity_policies(entity_arn):
     iam_client = session.client('iam')
     policies = []
     # describe existing policies
-
-    return []
+    policies = iam_client.list_attached_role_policies(RoleName=entity_arn)
+    print(policies)
+    return policies
 
 def build_revised_policy(entity_arn):
     iam_client = session.client('iam')
@@ -138,9 +140,14 @@ def get_service_alias(service):
     return service_aliases.get(service, service)
 
 def get_entity_arn(result_set):
-    return result_set[0][0]['VarCharValue']
+    try:
+        return result_set[0][0]['VarCharValue']
+    except IndexError as ie:
+        raise ValueError('The Athena query didn\'t return any results'.)
+    except Exception as e:
+        raise Exception(e)
 
 if __name__ == '__main__':
     lambda_handler({
-        'query_execution_id': '52e009f3-5a3a-4226-b562-dc9316a2995d'
+        'query_execution_id': '5f57f83c-69a7-4a53-870e-5b9639795906'
     },{})

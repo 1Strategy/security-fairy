@@ -24,7 +24,7 @@ config = {
 
 
 def lambda_handler(event, context):
-    return execute_query(event.get(entity_arn), event.get(num_days))
+    return execute_query(event.get('entity_arn'), event.get('num_days'))
 
 def execute_query(entity_arn, num_days):
     # Query
@@ -52,37 +52,11 @@ def execute_query(entity_arn, num_days):
 
     return execution['QueryExecutionId']
 
-    # for _ in range(10):
-    #     try:
-    #         results = athena.get_query_results(QueryExecutionId=execution['QueryExecutionId'])
-    #         print("Okay, thank you for waiting.")
-    #         print("Here are the details about your results.")
-    #         print("The Columns are:")
-    #         cols = []
-    #         for col in results["ResultSet"]["ResultSetMetadata"]["ColumnInfo"]:
-    #             cols.append(col["Name"])
-    #         print("There were " + str(len(results["ResultSet"]["Rows"])) + "results.")
-    #         for hit in results["ResultSet"]["Rows"]:
-    #             print(cols)
-    #             print(hit["Data"])
-    #     except ClientError as e:
-    #         print("Your results are not yet ready. Thank you for waiting.")
-    #         time.sleep(0.5)
-    #         print("How's your day going?")
-    #         time.sleep(10)
-    #         print(e.operation_name)
-
-
-# print("I'm sorry. There was an error with your request.")
-# print("I couldn't perform the operation: " + e.operation_name + ".")
-# print("I believe this is the reason for this error:" + '\n' + str(e.args))
-
-
 if __name__ == '__main__':
     lambda_handler(
-        event={
-            "entity_arn": "arn:aws:sts::281782457076:assumed-role/1S-Admins/alex",
-            "num_days": "-7"
+        {
+            "entity_arn": "arn:aws:iam::281782457076:role/1s_tear_down_role",
+            "num_days": "7"
         },
-        context=""
+        {}
     )
