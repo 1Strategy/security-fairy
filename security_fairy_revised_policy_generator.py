@@ -24,8 +24,11 @@ max_policy_size = {
 
 # Email token
 
-#for testing Athena Query Id:
-# query_execution_id = 52e009f3-5a3a-4226-b562-dc9316a2995d
+"""
+for testing Athena Query Id:
+    query_execution_id = 52e009f3-5a3a-4226-b562-dc9316a2995d
+"""
+
 
 def lambda_handler(event, context):
     query_execution_id = event.get('query_execution_id')
@@ -52,13 +55,16 @@ def lambda_handler(event, context):
 # Generate a diff
 # Push to DynamoDB
 
+<<<<<<< HEAD
     return {
         'query_execution_id': query_execution_id
     }
+=======
+>>>>>>> 8595af339c53aa2226fa9b4c90f70579f85b8f33
 
 def get_query_results(query_execution_id):
 
-    athena_client = session.client('athena', region_name = 'us-east-1')
+    athena_client = session.client('athena', region_name='us-east-1')
     result_set = []
 
     try:
@@ -149,5 +155,10 @@ def get_entity_arn(result_set):
 
 if __name__ == '__main__':
     lambda_handler({
+<<<<<<< HEAD
         'query_execution_id': '5f57f83c-69a7-4a53-870e-5b9639795906'
     },{})
+=======
+        'query_execution_id': '52e009f3-5a3a-4226-b562-dc9316a2995d'
+    }, {})
+>>>>>>> 8595af339c53aa2226fa9b4c90f70579f85b8f33

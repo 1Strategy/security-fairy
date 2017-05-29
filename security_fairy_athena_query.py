@@ -4,12 +4,12 @@ from botocore.exceptions import ClientError
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='sandbox')
 except Exception as e:
     session = boto3.session.Session()
 
 # Connect to Athena
-athena = session.client('athena', region_name = 'us-east-1')
+athena = session.client('athena', region_name='us-east-1')
 
 # Get named query
 queries = athena.list_named_queries()
@@ -26,6 +26,7 @@ config = {
 def lambda_handler(event, context):
     return execute_query(event.get('entity_arn'), event.get('num_days'))
 
+
 def execute_query(entity_arn, num_days):
     # Query
     hql = """
@@ -39,8 +40,6 @@ def execute_query(entity_arn, num_days):
            , useridentity.arn
        limit 50
     """.format(num_days=num_days, entity_arn=entity_arn)
-    print(hql)
-
 
     # Execute Query
     execution = athena.start_query_execution(QueryString=hql,
