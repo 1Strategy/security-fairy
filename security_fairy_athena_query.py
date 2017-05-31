@@ -54,8 +54,8 @@ def execute_query(entity_arn, num_days):
 if __name__ == '__main__':
     lambda_handler(
         {
-            "entity_arn": "arn:aws:iam::281782457076:role/1s_tear_down_role",
-            "num_days": "7"
+            "entity_arn": "arn:aws:iam::281782457076:assumed-role/1s_tear_down_role",
+            "num_days": "-7"
         },
         {}
     )
