@@ -1,7 +1,10 @@
 import boto3
 import time
 import json
+import re
 from botocore.exceptions import ClientError
+
+__author__ = 'Justin Iravani'
 
 # Create AWS session
 try:
@@ -26,7 +29,7 @@ max_policy_size = {
 
 """
 for testing Athena Query Id:
-    query_execution_id = 52e009f3-5a3a-4226-b562-dc9316a2995d
+    query_execution_id = 8d544e31-37af-4eb2-acf3-b5eda9f108bd
 """
 
 
@@ -50,17 +53,15 @@ def lambda_handler(event, context):
     query_action_policy = build_policy_from_query_actions(service_level_actions)
     print(query_action_policy)
 # Get Existing policies
-    # existing_entity_policies = get_existing_entity_policies(entity_arn)
+    existing_entity_policies = get_existing_entity_policies(entity_arn)
+    print(existing_entity_policies)
 # Create New Policy
 # Generate a diff
 # Push to DynamoDB
-
-<<<<<<< HEAD
+    write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn)
     return {
         'query_execution_id': query_execution_id
     }
-=======
->>>>>>> 8595af339c53aa2226fa9b4c90f70579f85b8f33
 
 def get_query_results(query_execution_id):
 
@@ -89,16 +90,24 @@ def get_permissions_from_query(result_set):
 def get_existing_entity_policies(entity_arn):
     iam_client = session.client('iam')
     policies = []
+
     # describe existing policies
-    policies = iam_client.list_attached_role_policies(RoleName=entity_arn)
-    print(policies)
+    existing_policies = iam_client.list_attached_role_policies(RoleName=re.split('/|:', entity_arn)[5])['AttachedPolicies']
+    for existing_policy in existing_policies:
+        if 'arn:aws:iam::aws:policy' not in existing_policy['PolicyArn']:
+            print(existing_policy)
+        #
     return policies
+
 
 def build_revised_policy(entity_arn):
     iam_client = session.client('iam')
 
 
 def build_policy_from_query_actions(service_level_actions):
+
+    built_policies = []
+
     built_policy = {
         "Version": "2012-10-17",
         "Statement": []
@@ -111,19 +120,31 @@ def build_policy_from_query_actions(service_level_actions):
                     "Effect": "Allow",
                     "Resource": "*"
                 }
-            )
+        )
+
 
     print(len(json.dumps(built_policy)))
     return json.dumps(built_policy)
 
 
-def write_policies_to_dynamodb(policies):
+def write_policies_to_dynamodb(token, policies, entity_arn):
 
-    dynamodb_table = event['dynamodb_table']
+    # dynamodb_table = event['dynamodb_table']
 
-    dynamodb_client = boto3.client('dynamodb', region_name='us-west-2')
+    dynamodb_client = session.client('dynamodb', region_name='us-west-2')
     dynamodb_client.put_item(TableName='security_fairy_pending_approval',
-                             Item={})
+                             Item={
+                                "token":{
+                                    "S": token
+                                },
+                                "new_policy":{
+                                    "S": policies
+                                },
+                                "entity_arn":
+                                {
+                                    "S":entity_arn
+                                }
+                             })
 
 def get_service_level_actions(result):
 
@@ -147,18 +168,19 @@ def get_service_alias(service):
 
 def get_entity_arn(result_set):
     try:
-        return result_set[0][0]['VarCharValue']
+        entity_arn = result_set[0][0]['VarCharValue']
+        print(entity_arn)
+        split_arn = re.split('/|:', entity_arn)
+        print(split_arn)
+        return "arn:aws:iam:" + split_arn[4] + ":role/" + split_arn[6]
     except IndexError as ie:
-        raise ValueError('The Athena query didn\'t return any results'.)
+        print(ie)
+        raise ValueError('The Athena query didn\'t return any results.')
     except Exception as e:
+        print(e)
         raise Exception(e)
 
 if __name__ == '__main__':
     lambda_handler({
-<<<<<<< HEAD
-        'query_execution_id': '5f57f83c-69a7-4a53-870e-5b9639795906'
+        'query_execution_id': '8d544e31-37af-4eb2-acf3-b5eda9f108bd'
     },{})
-=======
-        'query_execution_id': '52e009f3-5a3a-4226-b562-dc9316a2995d'
-    }, {})
->>>>>>> 8595af339c53aa2226fa9b4c90f70579f85b8f33

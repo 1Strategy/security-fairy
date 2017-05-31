@@ -5,9 +5,10 @@ import datetime
 
 # Use the Boto3 SDK to create a client to call SNS functions
 
-
+event = {'token':'8d544e31-37af-4eb2-acf3-b5eda9f108bd'}
 
 def lambda_handler(event, context):
+
 
     token = event.get(token)
     approval_url = 'https://.../' + token
