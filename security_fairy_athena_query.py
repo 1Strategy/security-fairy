@@ -27,19 +27,18 @@ def lambda_handler(event, context):
     return execute_query(event.get('entity_arn'), event.get('num_days'))
 
 
-def execute_query(entity_arn, num_days):
+def execute_query(entity_arn, num_days, escaped_arn):
     # Query
     hql = """
-      select useridentity.arn as user_arn
-           , eventsource
-           , array_distinct(array_agg(eventName)) as actions
-        from aws_logs.cloudtrail
-       where date_parse(eventTime, '%Y-%m-%dT%TZ') >= current_date + interval '{num_days}' day
-         and useridentity.arn = '{entity_arn}'
-    group by eventsource
-           , useridentity.arn
-       limit 50
-    """.format(num_days=num_days, entity_arn=entity_arn)
+       select useridentity.arn as user_arn
+            , eventsource
+            , array_distinct(array_agg(eventName)) as actions
+         from aws_logs.cloudtrail
+        where date_parse(eventTime, '%Y-%m-%dT%TZ') >= current_date + interval {num_days} day
+          and regexp_like(useridentity.arn, '{escaped_arn}\/.+')
+     group by useridentity.arn
+            , eventsource
+          """.format(num_days=num_days, entity_arn=entity_arn, escaped_arn=escaped_arn)
 
     # Execute Query
     execution = athena.start_query_execution(QueryString=hql,
