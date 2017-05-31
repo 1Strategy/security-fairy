@@ -35,10 +35,10 @@ Resources:
   ServerlessMergeParallel:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: 'serverless_merge_parallel'
+      FunctionName: 'security_fairy_revised_policy_generator'
       CodeUri: .
       Description: ''
-      Handler: serverless_merge_parallel.lambda_handler
+      Handler: security_fairy_revised_policy_generator.lambda_handler
       MemorySize: 128
       Policies:
       - AmazonAthenaFullAccess
@@ -102,7 +102,7 @@ Resources:
           },
           "BuildPolicy": {
             "Type": "Task",
-            "Resource": "Hello World!",
+            "Resource": "",
             "Retry":[
                {
                   "ErrorEquals":[
@@ -117,7 +117,7 @@ Resources:
           },
           "SendApprovalEmail": {
             "Type": "Task",
-            "Resource": "Hello World!",
+            "Resource": "",
             "End": true
           }
         }
