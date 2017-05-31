@@ -94,7 +94,7 @@ def validate_entity_arn(entity_arn):
 if __name__ == '__main__':
     lambda_handler(
         {
-            'body': "{\"entity_arn\":\"arn:aws:sts::281782457076:role/1S-Admins/alex\",\"num_days\":7}"
+            'body': "{\"entity_arn\":\"arn:aws:sts::281782457076:role/1s_tear_down_role/alex\",\"num_days\":7}"
         }, {}
     )
 #
