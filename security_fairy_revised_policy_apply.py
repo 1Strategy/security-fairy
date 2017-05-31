@@ -45,17 +45,19 @@ def apply_revised_policy(token):
 def get_revised_policy(token):
 
     try:
-        policy = session.client('dynamodb', region_name = 'us-west-2').get_item(TableName='security_fairy_pending_approval',
-                                 Key={
-                                    "token":{
-                                        "S": token
-                                    }
-                                 })['Item']['new_policy']['S']
+        policy = session.client('dynamodb', region_name = 'us-west-2') \
+                        .get_item(  TableName='security_fairy_pending_approval',
+                                    Key={
+                                        "token":{
+                                            "S": token
+                                            }
+                                        }
+                                 )['Item']['new_policy']['S']
         print(policy)
         return policy
     except Exception as e:
         print(e)
-        # raise ValueError('Token doesn\'t exist or has expired. Security-fairy must be rerun.')
+        raise ValueError('Token doesn\'t exist or has expired. Security-fairy must be rerun.')
 
 
 
