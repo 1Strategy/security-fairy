@@ -52,7 +52,9 @@ def execute_query(entity_arn, num_days):
     print(execution['QueryExecutionId'])
     print("Please wait while your results are generated.")
 
-    return execution['QueryExecutionId']
+    return {
+        'query_execution_id': execution['QueryExecutionId']
+    }
 
 
 def build_escaped_arn(entity_arn):

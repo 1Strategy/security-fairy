@@ -39,26 +39,23 @@ def lambda_handler(event, context):
     if query_execution_id is None:
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
-# Get Query Results
     raw_query_results = get_query_results(query_execution_id)
     print(raw_query_results)
-# Get entity_arn
+
     entity_arn = get_entity_arn(raw_query_results)
     print(entity_arn)
-# Get api level permissions from query
+
     service_level_actions = get_permissions_from_query(raw_query_results)
     print(service_level_actions)
 
-# Build new Policy
     query_action_policy = build_policy_from_query_actions(service_level_actions)
     print(query_action_policy)
-# Get Existing policies
+
     existing_entity_policies = get_existing_entity_policies(entity_arn)
     print(existing_entity_policies)
-# Create New Policy
-# Generate a diff
-# Push to DynamoDB
+
     write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn)
+
     return {
         'query_execution_id': query_execution_id
     }
@@ -81,10 +78,20 @@ def get_query_results(query_execution_id):
 
 
 def get_permissions_from_query(result_set):
-    permissions = []
+    permissions = {}
+
     for result in result_set:
-        permissions.append(get_service_level_actions(result))
+        service = result[1]['VarCharValue'].split('.')[0]
+        actions = result[2]['VarCharValue'].strip('[').strip(']').split(', ')
+        for action in actions:
+            if permissions.get(service) is None:
+                permissions[service]=[action]
+
+            elif permissions.get(service) is not None:
+                if action not in permissions[service]:
+                    permissions[service].append(action)
     return permissions
+    # {u'iam': [u'GetGroup'], u'lambda': [u'ListFunctions20150331', u'DeleteFunction20150331'], u'kms': [u'Decrypt'], u'ec2': [u'DescribeAddresses'], u'logs': [u'CreateLogStream', u'CreateLogGroup']}
 
 
 def get_existing_entity_policies(entity_arn):
@@ -96,12 +103,7 @@ def get_existing_entity_policies(entity_arn):
     for existing_policy in existing_policies:
         if 'arn:aws:iam::aws:policy' not in existing_policy['PolicyArn']:
             print(existing_policy)
-        #
     return policies
-
-
-def build_revised_policy(entity_arn):
-    iam_client = session.client('iam')
 
 
 def build_policy_from_query_actions(service_level_actions):
@@ -112,20 +114,23 @@ def build_policy_from_query_actions(service_level_actions):
         "Version": "2012-10-17",
         "Statement": []
     }
-    for actions in service_level_actions:
+
+    for key, value in service_level_actions.items():
+
+        api_permissions = []
+
+        for item in value:
+            api_permissions.append("{}:{}".format(key,item).encode('ascii', 'ignore'))
+
         built_policy['Statement'].append(
                 {
-                    "Sid": "SecurityFairyBuiltPolicy{service}".format(service=actions[0].split(':')[0].capitalize()),
-                    "Action": actions,
+                    "Sid": "SecurityFairyBuiltPolicy{key}".format(key=key.capitalize()),
+                    "Action": api_permissions,
                     "Effect": "Allow",
                     "Resource": "*"
                 }
         )
-
-
-    print(len(json.dumps(built_policy)))
     return json.dumps(built_policy)
-
 
 def write_policies_to_dynamodb(token, policies, entity_arn):
 
@@ -147,23 +152,13 @@ def write_policies_to_dynamodb(token, policies, entity_arn):
                              })
 
 def get_service_level_actions(result):
+    pass
 
-    entity_arn = result[0]['VarCharValue']
-    service = get_service_alias(result[1]['VarCharValue'].split('.')[0])
-    actions = result[2]['VarCharValue'].strip('[').strip(']').split(', ')
-
-    all_actions = []
-
-    for action in actions:
-        api_permission = service+':'+ action
-        all_actions.append(api_permission)
-    return all_actions
 
 def get_service_alias(service):
     service_aliases = {
-        'monitoring': 'cloudwatch'
+        "monitoring": "cloudwatch"
     }
-
     return service_aliases.get(service, service)
 
 def get_entity_arn(result_set):

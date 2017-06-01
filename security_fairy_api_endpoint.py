@@ -67,6 +67,9 @@ def validate_entity_arn(entity_arn):
     if 'user' in entity_arn:
         raise ValueError('Users not supported. Please enter a role ARN.')
 
+    if 'group' in entity_arn:
+        raise ValueError('Groups not supported. Please enter a role ARN.')
+
     pattern = re.compile("arn:aws:(sts|iam)::(\d{12})?:(role|assumed-role)\/(.*)")
 
     if not pattern.match(entity_arn):
