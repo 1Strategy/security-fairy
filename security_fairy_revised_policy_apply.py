@@ -40,7 +40,8 @@ def apply_revised_policy(policy_object):
     entity_arn = policy_object['entity_arn']
     entity_name = get_entity_name_from_arn(entity_arn)
     policy = policy_object['policy']
-
+    print("Attaching: ")
+    print("{}-security-fairy-revised-policy".format(entity_name))
     iam_client.put_role_policy( RoleName=entity_name,
                                 PolicyName="{entity_name}-security-fairy-revised-policy".format(entity_name=entity_name).replace('-','_'),
                                 PolicyDocument=policy)
@@ -51,6 +52,7 @@ def detach_existing_policies(entity_name):
 
     attached_policies = iam_client.list_attached_role_policies(RoleName=entity_name)['AttachedPolicies']
     for policy in attached_policies:
+        print("Detaching")
         print(policy['PolicyArn'])
         # iam_client.detach_role_policy(  RoleName=entity_name,
         #                                 PolicyArn=policy['PolicyArn'])
