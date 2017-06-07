@@ -24,7 +24,7 @@ def lambda_handler(event, context):
     method = event['httpMethod']
     domain = get_domain(event)
 
-    if method == 'GET' and event['queryStringParameters'] is not None:
+    if method == 'GET':# and event['queryStringParameters'] is not None:
         return api_website(event, domain)
 
     if method == 'POST':
@@ -71,10 +71,15 @@ def return_step_function_token_task(event, domain):
 def api_website(event, domain):
     # returns a website front end for approval
     dynamodb_client = session.client('dynamodb')
-    dynamodb_key = event['queryStringParameters']['key']
-    new_policy = dynamodb_client.get_item(TableName=os.environ['dynamodb_table'],
-                                          Key={'token': {'S': "{}".format(dynamodb_key)}})['Item']['new_policy']['S']
 
+
+
+    try:
+        dynamodb_key = event['queryStringParameters']['key']
+        new_policy = dynamodb_client.get_item(TableName=os.environ['dynamodb_table'],
+                                          Key={'token': {'S': "{}".format(dynamodb_key)}})['Item']['new_policy']['S']
+    except Exception:
+        new_policy = {"Error": "Key has either expired or is invalid."}
 
     body = """<html>
     <body bgcolor=\"#E6E6FA\">
