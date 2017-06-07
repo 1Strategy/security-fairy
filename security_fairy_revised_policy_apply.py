@@ -12,7 +12,9 @@ except Exception as e:
 def lambda_handler(event, context):
     api_return_payload = {
         'statusCode': 500,
-        'headers': {'Content-Type': 'text/html'},
+        'headers': {
+            'Content-Type': 'text/html'
+        },
         'body': 'Interal Server Error'
     }
 
@@ -20,6 +22,7 @@ def lambda_handler(event, context):
         token = event['token']
         policy_object = get_revised_policy(token)
         entity_name = get_entity_name_from_arn(policy_object['entity_arn'])
+
         apply_revised_policy(policy_object)
         detach_existing_policies(entity_name)
 
@@ -40,8 +43,10 @@ def apply_revised_policy(policy_object):
     entity_arn = policy_object['entity_arn']
     entity_name = get_entity_name_from_arn(entity_arn)
     policy = policy_object['policy']
+
     print("Attaching: ")
     print("{}-security-fairy-revised-policy".format(entity_name))
+
     iam_client.put_role_policy( RoleName=entity_name,
                                 PolicyName="{entity_name}-security-fairy-revised-policy".format(entity_name=entity_name).replace('-','_'),
                                 PolicyDocument=policy)
@@ -52,7 +57,7 @@ def detach_existing_policies(entity_name):
 
     attached_policies = iam_client.list_attached_role_policies(RoleName=entity_name)['AttachedPolicies']
     for policy in attached_policies:
-        print("Detaching")
+        print("Detaching: ")
         print(policy['PolicyArn'])
         # iam_client.detach_role_policy(  RoleName=entity_name,
         #                                 PolicyArn=policy['PolicyArn'])
@@ -87,11 +92,11 @@ def get_entity_name_from_arn(entity_arn):
 #     detach_existing_policies('arn:aws:iam::281782457076:role/1s_security_fairy_role')
 # if __name__ == '__main__':
 #     get_revised_policy('8d544e31-37af-4eb2-acf3-b5eda9f108bd')
+
 if __name__ == '__main__':
     lambda_handler({
         'token':'8d544e31-37af-4eb2-acf3-b5eda9f108bd'
     }, {})
-
 
 # if __name__ == '__main__':
 #     apply_revised_policy({'policy': u'{"Version": "2012-10-17", "Statement": [{"Action": ["ec2:DescribeAddresses"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyEc2"}, {"Action": ["logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs1"}, {"Action": ["iam:GetGroup"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyIam"}, {"Action": ["lambda:ListFunctions20150331", "lambda:DeleteFunction20150331"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLambda"}, {"Action": ["logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs2"}, {"Action": ["logs:CreateLogGroup", "logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs5"}, {"Action": ["kms:Decrypt"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyKms"}]}', 'entity_arn': u'arn:aws:iam::281782457076:role/1s_security_fairy_role'})

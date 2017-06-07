@@ -38,12 +38,12 @@ def lambda_handler(event, context):
 
 def invoke_state_machine(inputs):
     print(json.dumps(inputs))
-    # sfn_client.start_execution( stateMachineArn=os.environ['state_machine'],
-    #                             input=json.dumps(inputs)
+    session.client('stepfunctions').start_execution( stateMachineArn=os.environ['state_machine'],
+                                                     input=json.dumps(inputs))
 
 
 def validate_inputs(event):
-    input_payload = json.loads(event.get('body'))
+    input_payload = json.loads(event['body'])
     num_days = abs(input_payload.get('num_days', 7))
     if num_days > 30 or num_days < 1:
         print(num_days)

@@ -57,7 +57,7 @@ def lambda_handler(event, context):
     write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn)
 
     return {
-        'query_execution_id': query_execution_id
+        'token': query_execution_id
     }
 
 def get_query_results(query_execution_id):
@@ -81,7 +81,7 @@ def get_permissions_from_query(result_set):
     permissions = {}
 
     for result in result_set:
-        service = result[1]['VarCharValue'].split('.')[0]
+        service = get_service_alias(result[1]['VarCharValue'].split('.')[0])
         actions = result[2]['VarCharValue'].strip('[').strip(']').split(', ')
         for action in actions:
             if permissions.get(service) is None:
@@ -150,10 +150,6 @@ def write_policies_to_dynamodb(token, policies, entity_arn):
                                     "S":entity_arn
                                 }
                              })
-
-def get_service_level_actions(result):
-    pass
-
 
 def get_service_alias(service):
     service_aliases = {
