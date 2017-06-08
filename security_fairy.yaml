@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: An AWS Serverless Specification template describing your function.
+Description: Deploys a security auditing tool
 Parameters:
   SNSEmail:
     Type: String
@@ -74,6 +74,7 @@ Resources:
         Variables:
           activity_arn: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity
           sns_arn: !Ref SecurityFairySNSTopic
+          dynamodb_table: !Ref SecurityFairyDynamoDB
 
   SecurityFairyApplyPolicy:
     Type: AWS::Serverless::Function
@@ -81,13 +82,13 @@ Resources:
       FunctionName: 'security_fairy_policy_apply'
       CodeUri: .
       Description: ''
-      Handler: serverless_commander_in_charge.lambda_handler
+      Handler: security_fairy_policy_apply.lambda_handler
       MemorySize: 128
       Runtime: python2.7
       Timeout: 30
       Environment:
         Variables:
-          activity_arn: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:serverless_issue_fire_command
+          activity_arn: !Ref SecurityFairyApprovalActivity
           dynamodb_table: !Ref SecurityFairyDynamoDB
 
   SecurityFairyDynamoDB:
