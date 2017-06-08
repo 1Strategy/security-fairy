@@ -1,81 +1,78 @@
 {
-    "StartAt": "QueryAthena",
-    "States": {
-      "QueryAthena": {
-        "Type": "Task",
-        "Resource": "",
-        "Next": "WaitForQuery"
-      }
-    },
-    "WaitForQuery": {
-      "Type": "Wait",
-      "Seconds": 60,
-      "Next": "BuildPolicy"
-    },
-    "BuildPolicy": {
-      "Type": "Task",
-      "Resource": "",
-      "Retry": [
-         {
-            "ErrorEquals":[
-               "States.ALL"
-            ],
-            "IntervalSeconds":60,
-            "MaxAttempts":3,
-            "BackoffRate":1.5
-         }
-      ],
-      "Next": "SendApprovalEmail"
-    },
-    "PromptForApproval":{
-         "Type":"Parallel",
-         "Next":"MergeOutputStep",
-         "Branches":[
-            {
-               "StartAt":"Approval",
-               "States":{
-                  "Approval":{
-                     "Type":"Task",
-                     "Resource":"<REPLACE ME>",
-                     "TimeoutSeconds":3600,
-                     "Catch": [{
-                        "ErrorEquals": [ "States.TaskFailed", "States.Timeout" ],
-                        "Next": "PolicyDenial"
-                        }],
-                     "Next":"PolicyApply"
-                  },
-                  "PolicyApply":{
-                    "Type":"Task",
-                    "Resource":"",
-                    "End":true
-                  },
-                  "PolicyDenial":{
-                    "Type":"Task",
-                    "Resource":"",
-                    "End":true
-                  }
-               }
-            },
-            {
-               "StartAt":"WaitForCode",
-               "States":{
-                  "WaitForCode":{
-                     "Type":"Wait",
-                     "Seconds":3,
-                     "Next":"GenerateCode"
-                  },
-                  "GenerateCode":{
-                     "Type":"Task",
-                     "Resource":"arn:aws:states:us-west-2:281782457076:activity:security_fairy_approval_activity",
-                     "Next":"JSONXform"
-                  },
-                  "SendApprovalRequest":{
-                     "Type":"Task",
-                     "Resource":"arn:aws:lambda:us-west-2:281782457076:function:serverless_notification",
-                     "End":true
-                  }
-               }
-            }
-         ]
-      }
-  }
+	"StartAt": "QueryAthena",
+	"States": {
+		"QueryAthena": {
+			"Type": "Task",
+			"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_athena_query",
+			"Next": "WaitForQuery"
+		},
+		"WaitForQuery": {
+			"Type": "Wait",
+			"Seconds": 60,
+			"Next": "BuildPolicy"
+		},
+		"BuildPolicy": {
+			"Type": "Task",
+			"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_revised_policy_generator",
+			"Retry": [{
+				"ErrorEquals": [
+					"States.ALL"
+				],
+				"IntervalSeconds": 60,
+				"MaxAttempts": 3,
+				"BackoffRate": 1.5
+			}],
+			"Next": "PromptForApproval"
+		},
+		"PromptForApproval": {
+			"Type": "Parallel",
+			"End": true,
+			"Branches": [{
+					"StartAt": "Approval",
+					"States": {
+						"Approval": {
+							"Type": "Task",
+							"Resource": "arn:aws:states:us-west-2:281782457076:activity:security_fairy_approval_activity",
+							"TimeoutSeconds": 3600,
+							"Catch": [{
+								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+								"Next": "PolicyDenial"
+							}],
+							"Next": "PolicyApply"
+						},
+						"PolicyApply": {
+							"Type": "Task",
+							"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_policy_apply",
+							"End": true
+						},
+						"PolicyDenial": {
+							"Type": "Task",
+							"Resource": "",
+							"End": true
+						}
+					}
+				},
+				{
+					"StartAt": "WaitForCode",
+					"States": {
+						"WaitForCode": {
+							"Type": "Wait",
+							"Seconds": 3,
+							"Next": "GenerateCode"
+						},
+						"GenerateCode": {
+							"Type": "Task",
+							"Resource": "",
+							"Next": "SendApprovalRequest"
+						},
+						"SendApprovalRequest": {
+							"Type": "Task",
+							"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_email_approval_request",
+							"End": true
+						}
+					}
+				}
+			]
+		}
+	}
+}
