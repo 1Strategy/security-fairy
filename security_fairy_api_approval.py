@@ -1,3 +1,4 @@
+import string
 import boto3
 import json
 import re
@@ -53,13 +54,14 @@ def return_step_function_token_task(event, domain):
 
     sfn_client = session.client('stepfunctions')
     approval = event["pathParameters"].get("approval", "deny")
+    print(approval)
 
     if approval is 'approve':
         sfn_client.send_task_success(taskToken=event['queryStringParameters']['task-token'],
-                                     output={})
+                                     output="{}")
     if approval is 'deny':
         sfn_client.send_failure_success(taskToken=event['queryStringParameters']['task-token'],
-                                        output={})
+                                        output="{}")
 
     return {
         "statusCode":200,
@@ -72,8 +74,6 @@ def api_website(event, domain):
     # returns a website front end for approval
     dynamodb_client = session.client('dynamodb')
 
-
-
     try:
         dynamodb_key = event['queryStringParameters']['key']
         new_policy = dynamodb_client.get_item(TableName=os.environ['dynamodb_table'],
@@ -81,8 +81,9 @@ def api_website(event, domain):
     except Exception:
         new_policy = {"Error": "Key has either expired or is invalid."}
 
-    body = """<html>
-    <body bgcolor=\"#E6E6FA\">
+    body = """
+            <html>
+            <body bgcolor=\"#E6E6FA\">
             <head>
             <!-- Latest compiled and minified CSS -->
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -118,9 +119,7 @@ def api_website(event, domain):
                   'Content-Type':'application/json',
                   'Accept':'text/html'
               },
-              url:'"""
-    body += domain
-    body +=   """'+approval,
+              url:'$domain'+approval,
               crossDomain: true,
               data: JSON.stringify(dict),
               dataType: 'text',
@@ -135,10 +134,7 @@ def api_website(event, domain):
 
             $(document).ready(function(){
 
-                document.getElementById("output").innerHTML = JSON.stringify("""
-
-    body += "{}".format(new_policy)
-    body += """, null, "\\t");
+                document.getElementById("output").innerHTML = JSON.stringify($new_policy, null, "\\t");
                 $("#approve").click(function(){
                   console.log("Approve button clicked");
                   submitRequest("approve");
@@ -151,8 +147,7 @@ def api_website(event, domain):
 
             </script>
             </head>
-            <body>"""
-    body += """
+            <body>
             <center>
             <title>IAM Security Fairy</title>
             <h1><span class="glyphicon glyphicon-fire text-danger" ></span> IAM Security Fairy</h1>
@@ -164,13 +159,16 @@ def api_website(event, domain):
             </body>
             </html>"""
 
+    replace_dict = dict(new_policy=new_policy, domain=domain)
+    string.Template(body).safe_substitute(replace_dict)
+
     return {
                 "statusCode": 200,
                 "headers": {
                     "Content-Type": "text/html",
                     "Access-Control-Allow-Origin": "*"
                 },
-                "body": body
+                "body": string.Template(body).safe_substitute(replace_dict)
     }
 
 
