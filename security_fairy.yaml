@@ -96,7 +96,7 @@ Resources:
     Properties:
       AttributeDefinitions:
         -
-          AttributeName: "token"
+          AttributeName: "execution_id"
           AttributeType: "S"
         -
           AttributeName: "entity_arn"
@@ -104,7 +104,7 @@ Resources:
 
       KeySchema:
         -
-          AttributeName: "token"
+          AttributeName: "execution_id"
           KeyType: "HASH"
         -
           AttributeName: "entity_arn"

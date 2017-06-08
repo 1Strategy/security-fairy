@@ -3,20 +3,19 @@ import boto3
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='sandbox')
+    session = boto3.session.Session(profile_name='training')
 except Exception as e:
     session = boto3.session.Session()
 
 # Connect to Athena
-athena = session.client('athena', region_name='us-east-1')
+athena = session.client('athena')
 
 
 def lambda_handler(event, context):
     # You must submit the AWS account number within the event parameter
     # Run the create cloudtrail table query
     creation = athena.start_query_execution(QueryString=create_table,
-                                            ResultConfiguration=config
-                                            )
+                                            ResultConfiguration=config)
     return creation
 
 
@@ -88,3 +87,7 @@ outputformat 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
 location 's3://1strategy-training-traillogs/AWSLogs/{account_number}/CloudTrail/'
 ;
 """.format(account_number=event.get(accountId))
+
+
+if __name__ == '__main__':
+    lambda_handler({},{})

@@ -10,30 +10,17 @@ except Exception as e:
 
 
 def lambda_handler(event, context):
-    api_return_payload = {
-        'statusCode': 500,
-        'headers': {
-            'Content-Type': 'text/html'
-        },
-        'body': 'Interal Server Error'
-    }
 
     try:
-        token = event['token']
-        policy_object = get_revised_policy(token)
+        execution_id = event['id']
+        policy_object = get_revised_policy(execution_id)
         entity_name = get_entity_name_from_arn(policy_object['entity_arn'])
 
         apply_revised_policy(policy_object)
         detach_existing_policies(entity_name)
 
-        api_return_payload['body'] = 'Policies applied.'
-        api_return_payload['statusCode'] = 200
-
     except Exception as error:
         print(error)
-        api_return_payload['body'] = "Unsuccessful:\n {error}".format(error=error)
-
-    return api_return_payload
 
 
 def apply_revised_policy(policy_object):
@@ -63,15 +50,15 @@ def detach_existing_policies(entity_name):
         #                                 PolicyArn=policy['PolicyArn'])
 
 
-def get_revised_policy(token):
+def get_revised_policy(execution_id):
 
     return_response = {}
     try:
         dynamodb_response = session.client('dynamodb', region_name = 'us-west-2') \
                         .get_item(  TableName='security_fairy_pending_approval',
                                     Key={
-                                        "token":{
-                                            "S": token
+                                        "id":{
+                                            "S": execution_id
                                             }
                                         }
                                  )
@@ -81,7 +68,7 @@ def get_revised_policy(token):
 
     except Exception as e:
         print(e)
-        raise ValueError('Token doesn\'t exist or has expired. Security-fairy must be rerun.')
+        raise ValueError('Execution Id doesn\'t exist or has expired. Security-fairy must be rerun.')
 
 
 def get_entity_name_from_arn(entity_arn):
@@ -95,7 +82,7 @@ def get_entity_name_from_arn(entity_arn):
 
 if __name__ == '__main__':
     lambda_handler({
-        'token':'8d544e31-37af-4eb2-acf3-b5eda9f108bd'
+        'id':'8d544e31-37af-4eb2-acf3-b5eda9f108bd'
     }, {})
 
 # if __name__ == '__main__':

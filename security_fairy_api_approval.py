@@ -54,14 +54,16 @@ def return_step_function_token_task(event, domain):
 
     sfn_client = session.client('stepfunctions')
     approval = event["pathParameters"].get("approval", "deny")
+
     print(approval)
+    print(json.loads(event['body']))
 
     if approval is 'approve':
         sfn_client.send_task_success(taskToken=event['queryStringParameters']['task-token'],
                                      output="{}")
     if approval is 'deny':
-        sfn_client.send_failure_success(taskToken=event['queryStringParameters']['task-token'],
-                                        output="{}")
+        sfn_client.send_task_failure(taskToken=event['queryStringParameters']['task-token'],
+                                     output="{}")
 
     return {
         "statusCode":200,
@@ -75,11 +77,11 @@ def api_website(event, domain):
     dynamodb_client = session.client('dynamodb')
 
     try:
-        dynamodb_key = event['queryStringParameters']['key']
+        dynamodb_id = event['queryStringParameters']['id']
         new_policy = dynamodb_client.get_item(TableName=os.environ['dynamodb_table'],
-                                          Key={'token': {'S': "{}".format(dynamodb_key)}})['Item']['new_policy']['S']
+                                          Key={'execution_id': {'S': "{}".format(dynamodb_key)}})['Item']['new_policy']['S']
     except Exception:
-        new_policy = {"Error": "Key has either expired or is invalid."}
+        new_policy = {"Error": "This Exection Id has either expired or is invalid."}
 
     body = """
             <html>
@@ -107,9 +109,9 @@ def api_website(event, domain):
 
             var dict = {};
             var taskToken = getUrlParameter('task-token');
-            var key = getUrlParameter('key');
+            var executionId = getUrlParameter('execution_id');
             dict['task-token']= taskToken;
-            dict['key']=key;
+            dict['execution_id']=executionId;
 
           function submitRequest(approval){
 
@@ -178,7 +180,7 @@ def api_website(event, domain):
 
 if __name__ == '__main__':
     event = {
-  "body": "{\"test\":\"body\"}",
+  "body": "{\"execution_id\":\"some-key\"}",
   "resource": "/{proxy+}",
   "requestContext": {
     "resourceId": "123456",
@@ -190,7 +192,7 @@ if __name__ == '__main__':
   },
   "queryStringParameters": {
     "task-token": "some-guid-i-get",
-    "key":"some-other-guid",
+    "execution_id":"some-other-guid",
   },
   "headers": {
     "Accept-Language": "en-US,en;q=0.8",
@@ -205,7 +207,7 @@ if __name__ == '__main__':
   "pathParameters": {
     "proxy": "approve"
   },
-  "httpMethod": "GET",
+  "httpMethod": "POST",
   "path": "/path/to/resource"
 }
 

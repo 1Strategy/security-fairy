@@ -57,7 +57,7 @@ def lambda_handler(event, context):
     write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn)
 
     return {
-        'token': query_execution_id
+        'execution_id': query_execution_id
     }
 
 def get_query_results(query_execution_id):
@@ -132,15 +132,15 @@ def build_policy_from_query_actions(service_level_actions):
         )
     return json.dumps(built_policy)
 
-def write_policies_to_dynamodb(token, policies, entity_arn):
+def write_policies_to_dynamodb(execution_id, policies, entity_arn):
 
     # dynamodb_table = event['dynamodb_table']
 
     dynamodb_client = session.client('dynamodb', region_name='us-west-2')
     dynamodb_client.put_item(TableName='security_fairy_pending_approval',
                              Item={
-                                "token":{
-                                    "S": token
+                                "execution_id":{
+                                    "S": execution_id
                                 },
                                 "new_policy":{
                                     "S": policies

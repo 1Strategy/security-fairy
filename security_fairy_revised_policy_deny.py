@@ -9,16 +9,16 @@ except Exception as e:
 
 
 def lambda_handler(event, context):
-    token = event['token']
-    delete_revised_policy(token)
+    execution_id = event['execution_id']
+    delete_revised_policy(execution_id)
 
 
-def delete_revised_policy(token):
+def delete_revised_policy(execution_id):
     session.client( 'dynamodb',
                     region_name = 'us-west-2') \
                     .delete_item(   TableName='security_fairy_pending_approval',
                                     Key={
-                                        "token":{
-                                            "S": token
+                                        "execution_id":{
+                                            "S": execution_id
                                         }
                                     })

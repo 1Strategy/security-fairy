@@ -53,7 +53,7 @@ def execute_query(entity_arn, num_days):
     print("Please wait while your results are generated.")
 
     return {
-        'query_execution_id': execution['QueryExecutionId']
+        'id': execution['QueryExecutionId']
     }
 
 
