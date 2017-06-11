@@ -38,9 +38,9 @@ def lambda_handler(event, context):
 
 def invoke_state_machine(inputs):
     print(json.dumps(inputs))
-    session.client('stepfunctions').start_execution( stateMachineArn=os.environ['state_machine'],
-                                                     input=json.dumps(inputs))
-
+    response = session.client('stepfunctions').start_execution( stateMachineArn=os.environ['state_machine'],
+                                                                input=json.dumps(inputs))
+    print(response)
 
 def validate_inputs(event):
     input_payload = json.loads(event['body'])
@@ -84,7 +84,6 @@ def validate_entity_arn(entity_arn):
         entity_arn = refactored_arn
         session.client('iam').get_role(RoleName=split_arn[6])
 
-
     return entity_arn
 
 # if __name__ == '__main__':
@@ -97,7 +96,7 @@ def validate_entity_arn(entity_arn):
 if __name__ == '__main__':
     lambda_handler(
         {
-            'body': "{\"entity_arn\":\"arn:aws:sts::281782457076:role/1s_tear_down_role/alex\",\"num_days\":7}"
+            'body': "{\"entity_arn\":\"arn:aws:sts::281782457076:role/1S-Admins\",\"num_days\":30}"
         }, {}
     )
 #
