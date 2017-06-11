@@ -9,16 +9,21 @@ except Exception as e:
 
 
 def lambda_handler(event, context):
-    execution_id = event['execution_id']
-    delete_revised_policy(execution_id)
+
+    execution_id    = event['execution_id']
+    dynamodb_table  = event['dynamodb_table']
+    delete_revised_policy(dynamodb_table, execution_id)
 
 
-def delete_revised_policy(execution_id):
-    session.client( 'dynamodb',
-                    region_name = 'us-west-2') \
-                    .delete_item(   TableName='security_fairy_pending_approval',
+def delete_revised_policy(dynamodb_table, execution_id):
+    session.client( 'dynamodb') \
+                    .delete_item(   TableName=dynamodb_table,
                                     Key={
                                         "execution_id":{
                                             "S": execution_id
                                         }
                                     })
+if __name__ == '__main__':
+    lambda_handler({
+        'execution_id':'xyz-8d544e31-37af-4eb2-acf3-b5eda9f108bd'
+    },{})
