@@ -3,6 +3,7 @@ import boto3
 import json
 import re
 import os
+from requests.utils import unquote
 
 try:
     session = boto3.session.Session(profile_name='training')
@@ -54,16 +55,21 @@ def return_step_function_token_task(event, domain):
 
     sfn_client = session.client('stepfunctions')
     approval = event["pathParameters"].get("approval", "deny")
+    task_token = unqoute(event['queryStringParameters']['task-token'])
+
+    response_body = {}
 
     print(approval)
     print(json.loads(event['body']))
 
     if approval is 'approve':
-        sfn_client.send_task_success(taskToken=event['queryStringParameters']['task-token'],
+        sfn_client.send_task_success(taskToken=task_token,
                                      output="{}")
+        response_body['Policy'] = "New policy applied."
     if approval is 'deny':
-        sfn_client.send_task_failure(taskToken=event['queryStringParameters']['task-token'],
+        sfn_client.send_task_failure(taskToken=task_token,
                                      output="{}")
+        response_body['Policy'] = "Revised Policy deleted."
 
     return {
         "statusCode":200,
