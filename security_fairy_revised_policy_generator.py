@@ -6,6 +6,9 @@ from botocore.exceptions import ClientError
 
 __author__ = 'Justin Iravani'
 
+class NoResults(Exception):
+    pass
+
 # Create AWS session
 try:
     session = boto3.session.Session(profile_name='training')
@@ -34,36 +37,39 @@ for testing Athena Query Id:
 
 
 def lambda_handler(event, context):
+
     query_execution_id = event.get('query_execution_id')
 
     if query_execution_id is None:
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
     raw_query_results = get_query_results(query_execution_id)
-    print(raw_query_results)
 
     entity_arn = get_entity_arn(raw_query_results)
-    print(entity_arn)
 
     service_level_actions = get_permissions_from_query(raw_query_results)
-    print(service_level_actions)
 
     query_action_policy = build_policy_from_query_actions(service_level_actions)
-    print(query_action_policy)
+    # existing_entity_policies = get_existing_entity_policies(entity_arn)
+    write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn, event.get('dynamodb_table','security_fairy_dynamodb_table'))
 
-    existing_entity_policies = get_existing_entity_policies(entity_arn)
-    print(existing_entity_policies)
+    event['execution_id'] = query_execution_id
 
-    write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn)
-
-    return {
-        'execution_id': query_execution_id
-    }
+    return event
 
 def get_query_results(query_execution_id):
 
-    athena_client = session.client('athena', region_name='us-east-1')
+    athena_client = session.client('athena')
     result_set = []
+    query_state = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
+    print(query_state)
+    # ['QueryExecution']['Status']['State']
+    if query_state in ['FAILED','CANCELLED']:
+        raise RuntimeError("Query failed to execute")
+
+    if query_state in ['QUEUED','RUNNING']:
+        raise Exception("Query still running")
+
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
@@ -74,10 +80,14 @@ def get_query_results(query_execution_id):
     except ClientError as e:
         print(e)
 
+    if not result_set:
+        raise NoResults("Athena ResultSet {result_set}".format(result_set=result_set))
+
     return result_set
 
 
 def get_permissions_from_query(result_set):
+
     permissions = {}
 
     for result in result_set:
@@ -132,12 +142,11 @@ def build_policy_from_query_actions(service_level_actions):
         )
     return json.dumps(built_policy)
 
-def write_policies_to_dynamodb(execution_id, policies, entity_arn):
+def write_policies_to_dynamodb(execution_id, policies, entity_arn, dynamodb_table):
 
-    # dynamodb_table = event['dynamodb_table']
 
-    dynamodb_client = session.client('dynamodb', region_name='us-west-2')
-    dynamodb_client.put_item(TableName='security_fairy_pending_approval',
+    dynamodb_client = session.client('dynamodb')
+    dynamodb_client.put_item(TableName='security_fairy_dynamodb_table',
                              Item={
                                 "execution_id":{
                                     "S": execution_id
@@ -151,27 +160,24 @@ def write_policies_to_dynamodb(execution_id, policies, entity_arn):
                                 }
                              })
 
+
 def get_service_alias(service):
     service_aliases = {
         "monitoring": "cloudwatch"
     }
     return service_aliases.get(service, service)
 
+
 def get_entity_arn(result_set):
-    try:
-        entity_arn = result_set[0][0]['VarCharValue']
-        print(entity_arn)
-        split_arn = re.split('/|:', entity_arn)
-        print(split_arn)
-        return "arn:aws:iam:" + split_arn[4] + ":role/" + split_arn[6]
-    except IndexError as ie:
-        print(ie)
-        raise ValueError('The Athena query didn\'t return any results.')
-    except Exception as e:
-        print(e)
-        raise Exception(e)
+
+    entity_arn = result_set[0][0]['VarCharValue']
+    print(entity_arn)
+    split_arn = re.split('/|:', entity_arn)
+    print(split_arn)
+    return "arn:aws:iam:" + split_arn[4] + ":role/" + split_arn[6]
 
 if __name__ == '__main__':
+    # print(get_query_results('8d544e31-37af-4eb2-acf3-b5eda9f108bd'))
     lambda_handler({
-        'query_execution_id': '8d544e31-37af-4eb2-acf3-b5eda9f108bd'
+        'query_execution_id': '4d200e3c-4294-4168-9ec0-7e58b0954005'
     },{})
