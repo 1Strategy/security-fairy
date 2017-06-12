@@ -84,7 +84,7 @@ def api_website(event, domain):
 
     try:
         dynamodb_id = event['queryStringParameters']['id']
-        new_policy = dynamodb_client.get_item(TableName=os.environ['dynamodb_table'],
+        new_policy  = dynamodb_client.get_item(TableName=os.environ['dynamodb_table'],
                                           Key={'execution_id': {'S': "{}".format(dynamodb_key)}})['Item']['new_policy']['S']
     except Exception:
         new_policy = {"Error": "This Exection Id has either expired or is invalid."}

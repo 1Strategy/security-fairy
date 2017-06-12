@@ -53,7 +53,7 @@ def validate_inputs(event):
     entity_arn = validate_entity_arn(input_payload.get('entity_arn'))
 
     return {
-        'num_days': num_days*-1,
+        'num_days'  : num_days*-1,
         'entity_arn': entity_arn
     }
 
@@ -79,9 +79,9 @@ def validate_entity_arn(entity_arn):
 
     if not assumed_role_pattern.match(entity_arn):
 
-        split_arn = re.split('/|:', entity_arn)
-        refactored_arn = "arn:aws:sts:" + split_arn[4] + ":assumed-role/" + split_arn[6]
-        entity_arn = refactored_arn
+        split_arn       = re.split('/|:', entity_arn)
+        refactored_arn  = "arn:aws:sts:" + split_arn[4] + ":assumed-role/" + split_arn[6]
+        entity_arn      = refactored_arn
         session.client('iam').get_role(RoleName=split_arn[6])
 
     return entity_arn

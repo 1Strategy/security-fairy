@@ -12,7 +12,7 @@ except Exception as e:
 
 def lambda_handler(event, context):
 
-    event['execution_id']=execute_query(event['entity_arn'], event['num_days'], event['s3_bucket'])
+    event['execution_id'] = execute_query(event['entity_arn'], event['num_days'], event['s3_bucket'])
     return event
 
 
@@ -55,7 +55,7 @@ def execute_query(entity_arn, num_days, s3_bucket):
 
 def build_escaped_arn(entity_arn):
 
-    split_arn = re.split('/|:', entity_arn)
+    split_arn   = re.split('/|:', entity_arn)
     escaped_arn = "arn:aws:sts:" + split_arn[4] + ":assumed-role/\\" + split_arn[6]
     print(escaped_arn)
     return escaped_arn

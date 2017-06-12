@@ -2,12 +2,22 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Deploys a security auditing tool
 Parameters:
+
+  CloudTrailS3Bucket:
+    Type: String
+    Default: some-bucket
+    Description: This is the bucket where your cloudtrail logs feed into
+
   SNSEmail:
     Type: String
     Default: justin.iravani@1strategy.com
     Description: The email where SNS notifications will be sent
 
 Resources:
+  SecurityFairyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      Name: !Sub security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
 
   SecurityFairyApiEndpoint:
     Type: AWS::Serverless::Function
@@ -21,9 +31,37 @@ Resources:
       - AdministratorAccess
       Runtime: python3.6
       Timeout: 30
+      Events:
+        GetApi:
+          Type: Api
+          Properties:
+            Path: /start
+            Method: GET
+        PostApi:
+          Type: Api
+          Properties:
+            Path: /start
+            Method: POST
+
+  SecurityFairyVariableInjection:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_variable_injection'
+      CodeUri: .
+      Description: 'This function queries Athena to determine permissions'
+      Handler: security_fairy_variable_injection.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      Runtime: python3.6
+      Timeout: 30
       Environment:
         Variables:
-          state_machine: security_fairy_state_machine # !Ref StateMachine
+          sns_arn: !Ref SecurityFairySNSTopic
+          dynamodb_table: !Ref SecurityFairyDynamoDB
+          activity_arn: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity
+          s3_bucket: !Ref SecurityFairyS3Bucket
+          api_endpoint: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
 
   SecurityFairyAthenaQuery:
     Type: AWS::Serverless::Function
@@ -51,10 +89,6 @@ Resources:
       - AmazonDynamoDBFullAccess
       Runtime: python3.6
       Timeout: 30
-      Environment:
-        Variables:
-          sns_arn: !Ref SecurityFairySNSTopic
-          dynamodb_table: !Ref SecurityFairyDynamoDB
 
   SecurityFairyEmailApproval:
     Type: AWS::Serverless::Function
@@ -70,11 +104,28 @@ Resources:
       - AWSStepFunctionsFullAccess
       Runtime: python3.6
       Timeout: 30
-      Environment:
-        Variables:
-          activity_arn: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity
-          sns_arn: !Ref SecurityFairySNSTopic
-          dynamodb_table: !Ref SecurityFairyDynamoDB
+
+  SecurityFairyApiApproval:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_api_approval'
+      CodeUri: .
+      Description: ''
+      Handler: security_fairy_api_approval.lambda_handler
+      MemorySize: 128
+      Runtime: python2.7
+      Timeout: 30
+      Events:
+        GetApi:
+          Type: Api
+          Properties:
+            Path: /approve
+            Method: GET
+        PostApi:
+          Type: Api
+          Properties:
+            Path: /approve
+            Method: POST
 
   SecurityFairyApplyPolicy:
     Type: AWS::Serverless::Function
@@ -86,10 +137,7 @@ Resources:
       MemorySize: 128
       Runtime: python2.7
       Timeout: 30
-      Environment:
-        Variables:
-          activity_arn: !Ref SecurityFairyApprovalActivity
-          dynamodb_table: !Ref SecurityFairyDynamoDB
+
 
   SecurityFairyDynamoDB:
     Type: "AWS::DynamoDB::Table"
@@ -241,3 +289,32 @@ Resources:
 #       }
 #    ]
 # },
+
+Outputs:
+  ApiEndpoint:
+    Description: "Security Fairy Invokation Endpoint"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  # SecurityFairyS3BucketPolicy:
+  #   Type: "AWS::S3::BucketPolicy"
+  #   Properties:
+  #     Bucket: !Ref SecurityFairyS3Bucket
+  #     PolicyDocument:
+  #       Statement:
+  #       -
+  #         Action:
+  #           - "s3:GetObject"
+  #         Effect: "Allow"
+  #         Resource:
+  #           Fn::Join:
+  #             - ""
+  #             -
+  #               - "arn:aws:s3:::"
+  #               -
+  #                 Ref: "SecurityFairyS3Bucket"
+  #               - "/*"
+  #         Principal: "*"
+  #         Condition:
+  #           ArnLike:
+  #             aws:SourceArn:
+  #               - "http://www.example.com/*"
+  #               - "http://example.com/*"

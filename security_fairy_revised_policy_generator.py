@@ -43,13 +43,13 @@ def lambda_handler(event, context):
     if query_execution_id is None:
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
-    raw_query_results = get_query_results(query_execution_id)
+    raw_query_results     = get_query_results(query_execution_id)
 
-    entity_arn = get_entity_arn(raw_query_results)
+    entity_arn            = get_entity_arn(raw_query_results)
 
     service_level_actions = get_permissions_from_query(raw_query_results)
 
-    query_action_policy = build_policy_from_query_actions(service_level_actions)
+    query_action_policy   = build_policy_from_query_actions(service_level_actions)
     # existing_entity_policies = get_existing_entity_policies(entity_arn)
     write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn, event.get('dynamodb_table','security_fairy_dynamodb_table'))
 
@@ -59,9 +59,9 @@ def lambda_handler(event, context):
 
 def get_query_results(query_execution_id):
 
-    athena_client = session.client('athena')
-    result_set = []
-    query_state = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
+    athena_client   = session.client('athena')
+    result_set      = []
+    query_state     = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
     print(query_state)
     # ['QueryExecution']['Status']['State']
     if query_state in ['FAILED','CANCELLED']:
@@ -105,8 +105,8 @@ def get_permissions_from_query(result_set):
 
 
 def get_existing_entity_policies(entity_arn):
-    iam_client = session.client('iam')
-    policies = []
+    iam_client  = session.client('iam')
+    policies    = []
 
     # describe existing policies
     existing_policies = iam_client.list_attached_role_policies(RoleName=re.split('/|:', entity_arn)[5])['AttachedPolicies']
@@ -118,9 +118,9 @@ def get_existing_entity_policies(entity_arn):
 
 def build_policy_from_query_actions(service_level_actions):
 
-    built_policies = []
+    built_policies  = []
 
-    built_policy = {
+    built_policy    = {
         "Version": "2012-10-17",
         "Statement": []
     }

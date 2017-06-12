@@ -7,16 +7,14 @@ try:
 except Exception as e:
     session = boto3.session.Session()
 
+cloudtrail_bucket = "1strategy-training-traillogs"
+account_number = session.client('sts').get_caller_identity()
+
+
+
+
 # Connect to Athena
-athena = session.client('athena')
-
-
-def lambda_handler(event, context):
-    # You must submit the AWS account number within the event parameter
-    # Run the create cloudtrail table query
-    creation = athena.start_query_execution(QueryString=create_table,
-                                            ResultConfiguration=config)
-    return creation
+athena = session.client('athena', region_name='us-west-2')
 
 
 # Query Configurations
@@ -84,9 +82,20 @@ create external table if not exists aws_logs.cloudtrail (
 row format serde 'com.amazon.emr.hive.serde.CloudTrailSerde'
 stored as inputformat 'com.amazon.emr.cloudtrail.CloudTrailInputFormat'
 outputformat 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
-location 's3://1strategy-training-traillogs/AWSLogs/{account_number}/CloudTrail/'
+location 's3://{cloudtrail_bucket}/AWSLogs/{account_number}/CloudTrail/'
 ;
-""".format(account_number=event.get(accountId))
+""" \
+.format(cloudtrail_bucket=cloudtrail_bucket,account_number=account_number)
+
+
+def lambda_handler(event, context):
+    # You must submit the AWS account number within the event parameter
+    # Run the create cloudtrail table query
+    creation = athena.start_query_execution(QueryString=create_table,
+                                            ResultConfiguration=config)
+    return creation
+
+
 
 
 if __name__ == '__main__':

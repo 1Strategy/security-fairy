@@ -8,6 +8,6 @@ except Exception as e:
 
 def lambda_handler(event,context):
 
-    sfn_client = session.client('stepfunctions')
-    response = sfn_client.get_activity_task(activityArn=os.environ['activity_arn'])
+    sfn_client  = session.client('stepfunctions')
+    response    = sfn_client.get_activity_task(activityArn=os.environ['activity_arn'])
     return response
