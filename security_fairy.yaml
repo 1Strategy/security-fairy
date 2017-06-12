@@ -338,8 +338,8 @@ Resources:
 #         }
 #       }
 #     }
-#   - {potato: !GetAtt [ ServerlessChargeCannons1, Arn ],
-#       lambdaArn: !GetAtt [ ServerlessChargeCannons,  Arn ]}
+#   - {potato: !Ref SomeFunction,
+#       lambdaArn: !GetAtt [ SomeOtherFunction,  Arn ]}
 Outputs:
   ApiEndpoint:
     Description: "Security Fairy Invokation Endpoint"
