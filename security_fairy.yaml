@@ -183,119 +183,26 @@ Resources:
 #     Properties:
 #       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
 #       DefinitionString: !Sub |-
-#       {
-#           "StartAt": "InjectVariables",
-#           "States": {
-#               "InjectVariables":
-#               {
-#               "Type": "Task",
-#               "Resource": !Ref SecurityFairyVariableInjection,
-#               "Next": "QueryAthena"
-#             },
-#             "QueryAthena": {
-#               "Type": "Task",
-#               "Resource": "",
-#               "Next": "WaitForQuery"
-#             },
-#            "WaitForQuery": {
-#               "Type": "Wait",
-#               "Seconds": 60,
-#               "Next": "BuildPolicy"
-#             },
-#             "BuildPolicy": {
-#             "Type": "Task",
-#             "Resource": !Ref SecurityFairyApprovalActivity,
-#             "Retry": [
-#                {
-#                   "ErrorEquals":[
-#                      "States.ALL"
-#                   ],
-#                   "IntervalSeconds":10,
-#                   "MaxAttempts":3,
-#                   "BackoffRate":1.5
-#                }
-#             ],
-#             "Next": "SendApprovalEmail"
-#           },
-#           "SendApprovalEmail": {
-#             "Type": "Task",
-#             "Resource": "",
-#             "End": true
-#           }
+#     {
+#       "Comment": "A Hello World AWL example using an AWS Lambda Function",
+#       "StartAt": "HelloWorld",
+#       "States": {
+#         "HelloWorld": {
+#           "Type": "Task",
+#           "Resource": "${lambdaArn}",
+#           "Next": "${AWS::Region}"
+#         },
+#         "${AWS::Region}": {
+#           "Type": "Task",
+#           "Resource": "${potato}",
+#           "End": true
 #         }
-#
-#
-# "PromptForFireCommand":{
-#    "Type":"Parallel",
-#    "Next":"MergeOutputStep",
-#    "Branches":[
-#       {
-#          "StartAt":"IssueFireCommand",
-#          "States":{
-#             "IssueFireCommand":{
-#                "Type":"Task",
-#                "Resource":"<REPLACE ME>",
-#                "TimeoutSeconds":120,
-#                "Catch": [{
-#                   "ErrorEquals": [ "States.TaskFailed", "States.Timeout" ],
-#                   "Next": "Hesitation"
-#                   }],
-#                "Next":"PlanetDestroyed"
-#             },
-#             "PlanetDestroyed":{
-#               "Type":"Pass",
-#               "Result":"planet_destroyed",
-#               "ResultPath":"$.message.message_context",
-#               "End":true
-#             },
-#             "Hesitation":{
-#               "Type":"Pass",
-#               "Result":"hesitation",
-#               "ResultPath":"$.message.message_context",
-#               "End":true
-#
-#             }
-#          }
-#       },
-#       {
-#          "StartAt":"WaitForCode",
-#          "States":{
-#             "WaitForCode":{
-#                "Type":"Wait",
-#                "Seconds":3,
-#                "Next":"GenerateCode"
-#             },
-#             "GenerateCode":{
-#                "Type":"Task",
-#                "Resource":"arn:aws:lambda:us-west-2:281782457076:function:serverless_get_firing_code",
-#                "Next":"JSONXform"
-#             },
-#             "JSONXform":{
-#                "Type":"Pass",
-#                "InputPath":"$.firing_code",
-#                "ResultPath":"$.message",
-#                "Next":"SendCode"
-#             },
-#             "SendCode":{
-#                "Type":"Task",
-#                "Resource":"arn:aws:lambda:us-west-2:281782457076:function:serverless_notification",
-#                "End":true
-#             }
-#          }
-#       },
-#       {
-#          "StartAt":"InformationPassThrough1",
-#          "States":{
-#             "InformationPassThrough1":{
-#                "Type":"Pass",
-#                "End":true
-#             }
-#          }
 #       }
-#    ]
-# },
-#
-#
+#     }
+#   - { potato: !Ref SomeFunction,
+#       lambdaArn: !GetAtt [ SomeOtherFunction,  Arn ]}
+
+
 #   SecurityFairyS3BucketPolicy:
 #     Type: "AWS::S3::BucketPolicy"
 #     Properties:
@@ -320,26 +227,7 @@ Resources:
 #               aws:SourceArn:
 #                 - "http://www.example.com/*"
 #                 - "http://example.com/*"
-# !Sub
-#   - |-
-#     {
-#       "Comment": "A Hello World AWL example using an AWS Lambda Function",
-#       "StartAt": "HelloWorld",
-#       "States": {
-#         "HelloWorld": {
-#           "Type": "Task",
-#           "Resource": "${lambdaArn}",
-#           "Next": "${AWS::Region}"
-#         },
-#         "${AWS::Region}": {
-#           "Type": "Task",
-#           "Resource": "${potato}",
-#           "End": true
-#         }
-#       }
-#     }
-#   - { potato: !Ref SomeFunction,
-#       lambdaArn: !GetAtt [ SomeOtherFunction,  Arn ]}
+
 Outputs:
   ApiEndpoint:
     Description: "Security Fairy Invokation Endpoint"
