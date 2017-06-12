@@ -51,6 +51,8 @@ def lambda_handler(event, context):
 
     query_action_policy   = build_policy_from_query_actions(service_level_actions)
     # existing_entity_policies = get_existing_entity_policies(entity_arn)
+    print(query_action_policy)
+
     write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn, event.get('dynamodb_table','security_fairy_dynamodb_table'))
 
     event['execution_id'] = query_execution_id
@@ -59,11 +61,11 @@ def lambda_handler(event, context):
 
 def get_query_results(query_execution_id):
 
-    athena_client   = session.client('athena')
+    athena_client   = session.client('athena', region_name='us-east-1')
     result_set      = []
     query_state     = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
-    print(query_state)
-    # ['QueryExecution']['Status']['State']
+    print(query_state['QueryExecution']['Status']['State'])
+    #
     if query_state in ['FAILED','CANCELLED']:
         raise RuntimeError("Query failed to execute")
 
@@ -179,5 +181,5 @@ def get_entity_arn(result_set):
 if __name__ == '__main__':
     # print(get_query_results('8d544e31-37af-4eb2-acf3-b5eda9f108bd'))
     lambda_handler({
-        'query_execution_id': '4d200e3c-4294-4168-9ec0-7e58b0954005'
+        'query_execution_id': '8d544e31-37af-4eb2-acf3-b5eda9f108bd'
     },{})

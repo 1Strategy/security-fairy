@@ -338,7 +338,7 @@ Resources:
 #         }
 #       }
 #     }
-#   - {potato: !Ref SomeFunction,
+#   - { potato: !Ref SomeFunction,
 #       lambdaArn: !GetAtt [ SomeOtherFunction,  Arn ]}
 Outputs:
   ApiEndpoint:

@@ -11,6 +11,6 @@ def lambda_handler(event, context):
     raw_env_vars    = lambda_client.get_function(FunctionName=name, Qualifier=version)['Configuration']['Environment']['Variables']
 
     for key, value in raw_env_vars.items():
-        event[key]=value
+        event[key] = value
 
     return event

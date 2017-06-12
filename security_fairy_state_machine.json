@@ -1,6 +1,11 @@
 {
 	"StartAt": "QueryAthena",
 	"States": {
+		"InjectVariables": {
+     "Type": "Task",
+     "Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_variable_injection",
+     "Next": "QueryAthena"
+    },
 		"QueryAthena": {
 			"Type": "Task",
 			"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_athena_query",
