@@ -112,16 +112,16 @@ Resources:
       CodeUri: .
       Description: ''
       Handler: security_fairy_api_approval.lambda_handler
-      MemorySize: 128
-      Runtime: python2.7
+      MemorySize: 512
+      Runtime: python3.6
       Timeout: 30
       Events:
-        GetApi:
+        ApprovalGetApi:
           Type: Api
           Properties:
             Path: /approve
             Method: GET
-        PostApi:
+        ApprovalPostApi:
           Type: Api
           Properties:
             Path: /approve
@@ -135,7 +135,7 @@ Resources:
       Description: ''
       Handler: security_fairy_policy_apply.lambda_handler
       MemorySize: 128
-      Runtime: python2.7
+      Runtime: python3.6
       Timeout: 30
 
 
@@ -184,20 +184,25 @@ Resources:
 #       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
 #       DefinitionString: !Sub |-
 #       {
-#           "StartAt": "QueryAthena",
+#           "StartAt": "InjectVariables",
 #           "States": {
+#               "InjectVariables":
+#               {
+#               "Type": "Task",
+#               "Resource": !Ref SecurityFairyVariableInjection,
+#               "Next": "QueryAthena"
+#             },
 #             "QueryAthena": {
 #               "Type": "Task",
 #               "Resource": "",
 #               "Next": "WaitForQuery"
-#             }
-#           },
-#           "WaitForQuery": {
-#             "Type": "Wait",
-#             "Seconds": 60,
-#             "Next": "BuildPolicy"
-#           },
-#           "BuildPolicy": {
+#             },
+#            "WaitForQuery": {
+#               "Type": "Wait",
+#               "Seconds": 60,
+#               "Next": "BuildPolicy"
+#             },
+#             "BuildPolicy": {
 #             "Type": "Task",
 #             "Resource": !Ref SecurityFairyApprovalActivity,
 #             "Retry": [
@@ -289,32 +294,53 @@ Resources:
 #       }
 #    ]
 # },
-
+#
+#
+#   SecurityFairyS3BucketPolicy:
+#     Type: "AWS::S3::BucketPolicy"
+#     Properties:
+#       Bucket: !Ref SecurityFairyS3Bucket
+#       PolicyDocument:
+#         Statement:
+#         -
+#           Action:
+#             - "s3:GetObject"
+#           Effect: "Allow"
+#           Resource:
+#             Fn::Join:
+#               - ""
+#               -
+#                 - "arn:aws:s3:::"
+#                 -
+#                   Ref: "SecurityFairyS3Bucket"
+#                 - "/*"
+#           Principal: "*"
+#           Condition:
+#             ArnLike:
+#               aws:SourceArn:
+#                 - "http://www.example.com/*"
+#                 - "http://example.com/*"
+# !Sub
+#   - |-
+#     {
+#       "Comment": "A Hello World AWL example using an AWS Lambda Function",
+#       "StartAt": "HelloWorld",
+#       "States": {
+#         "HelloWorld": {
+#           "Type": "Task",
+#           "Resource": "${lambdaArn}",
+#           "Next": "${AWS::Region}"
+#         },
+#         "${AWS::Region}": {
+#           "Type": "Task",
+#           "Resource": "${potato}",
+#           "End": true
+#         }
+#       }
+#     }
+#   - {potato: !GetAtt [ ServerlessChargeCannons1, Arn ],
+#       lambdaArn: !GetAtt [ ServerlessChargeCannons,  Arn ]}
 Outputs:
   ApiEndpoint:
     Description: "Security Fairy Invokation Endpoint"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-  # SecurityFairyS3BucketPolicy:
-  #   Type: "AWS::S3::BucketPolicy"
-  #   Properties:
-  #     Bucket: !Ref SecurityFairyS3Bucket
-  #     PolicyDocument:
-  #       Statement:
-  #       -
-  #         Action:
-  #           - "s3:GetObject"
-  #         Effect: "Allow"
-  #         Resource:
-  #           Fn::Join:
-  #             - ""
-  #             -
-  #               - "arn:aws:s3:::"
-  #               -
-  #                 Ref: "SecurityFairyS3Bucket"
-  #               - "/*"
-  #         Principal: "*"
-  #         Condition:
-  #           ArnLike:
-  #             aws:SourceArn:
-  #               - "http://www.example.com/*"
-  #               - "http://example.com/*"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/start"
