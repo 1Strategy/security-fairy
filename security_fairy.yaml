@@ -5,7 +5,7 @@ Parameters:
 
   CloudTrailS3Bucket:
     Type: String
-    Default: some-bucket
+    Default: 1strategy-training-traillogs
     Description: This is the bucket where your cloudtrail logs feed into
 
   SNSEmail:
@@ -14,10 +14,11 @@ Parameters:
     Description: The email where SNS notifications will be sent
 
 Resources:
+
   SecurityFairyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      Name: !Sub security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
+      BucketName: !Sub security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
 
   SecurityFairyApiEndpoint:
     Type: AWS::Serverless::Function
@@ -29,7 +30,7 @@ Resources:
       MemorySize: 128
       Policies:
       - AdministratorAccess
-      Runtime: python3.6
+      Runtime: python2.7
       Timeout: 30
       Events:
         GetApi:
@@ -53,7 +54,8 @@ Resources:
       MemorySize: 128
       Policies:
       - AWSLambdaBasicExecutionRole
-      Runtime: python3.6
+      - AWSLambdaReadOnlyAccess
+      Runtime: python2.7
       Timeout: 30
       Environment:
         Variables:
@@ -73,7 +75,8 @@ Resources:
       MemorySize: 128
       Policies:
       - AmazonAthenaFullAccess
-      Runtime: python3.6
+      - AmazonS3FullAccess
+      Runtime: python2.7
       Timeout: 30
 
   SecurityFairyPolicyGenerator:
@@ -87,7 +90,8 @@ Resources:
       Policies:
       - AmazonAthenaFullAccess
       - AmazonDynamoDBFullAccess
-      Runtime: python3.6
+      - AmazonS3ReadOnlyAccess
+      Runtime: python2.7
       Timeout: 30
 
   SecurityFairyEmailApproval:
@@ -96,13 +100,12 @@ Resources:
       FunctionName: 'security_fairy_email_approval_request'
       CodeUri: .
       Description: ''
-      Handler: security_fairy_revised_policy_generator.lambda_handler
+      Handler: security_fairy_email_approval_request.lambda_handler
       MemorySize: 128
       Policies:
       - AmazonSNSFullAccess
-      - AmazonDynamoDBFullAccess
       - AWSStepFunctionsFullAccess
-      Runtime: python3.6
+      Runtime: python2.7
       Timeout: 30
 
   SecurityFairyApiApproval:
@@ -113,31 +116,67 @@ Resources:
       Description: ''
       Handler: security_fairy_api_approval.lambda_handler
       MemorySize: 512
-      Runtime: python3.6
+      Runtime: python2.7
       Timeout: 30
+      Policies:
+      - AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          dynamodb_table: !Ref SecurityFairyDynamoDB
       Events:
         ApprovalGetApi:
           Type: Api
           Properties:
-            Path: /approve
+            Path: /{approval}
             Method: GET
         ApprovalPostApi:
           Type: Api
           Properties:
-            Path: /approve
+            Path: /{approval}
             Method: POST
 
-  SecurityFairyApplyPolicy:
+  SecurityFairyApprovePolicy:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: 'security_fairy_policy_apply'
+      FunctionName: 'security_fairy_revised_policy_approve'
       CodeUri: .
       Description: ''
-      Handler: security_fairy_policy_apply.lambda_handler
+      Handler: security_fairy_revised_policy_approve.lambda_handler
       MemorySize: 128
-      Runtime: python3.6
+      Policies:
+      - AmazonDynamoDBFullAccess
+      - AdministratorAccess
+      Runtime: python2.7
       Timeout: 30
 
+  SecurityFairyDenyPolicy:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_revised_policy_deny'
+      CodeUri: .
+      Description: ''
+      Handler: security_fairy_revised_policy_deny.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonDynamoDBFullAccess
+      Runtime: python2.7
+      Timeout: 30
+      Environment:
+        Variables:
+          dynamodb_table: !Ref SecurityFairyDynamoDB
+
+  SecurityFairyGetTaskToken:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_get_task_token'
+      CodeUri: .
+      Description: ''
+      Handler: security_fairy_get_task_token.lambda_handler
+      MemorySize: 128
+      Runtime: python2.7
+      Timeout: 30
+      Policies:
+      - AWSStepFunctionsFullAccess
 
   SecurityFairyDynamoDB:
     Type: "AWS::DynamoDB::Table"
@@ -146,17 +185,12 @@ Resources:
         -
           AttributeName: "execution_id"
           AttributeType: "S"
-        -
-          AttributeName: "entity_arn"
-          AttributeType: "S"
 
       KeySchema:
         -
           AttributeName: "execution_id"
           KeyType: "HASH"
-        -
-          AttributeName: "entity_arn"
-          KeyType: "RANGE"
+
       ProvisionedThroughput:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
@@ -178,30 +212,103 @@ Resources:
     Properties:
       Name: security_fairy_approval_activity
 
-#   StateMachine:
-#     Type: AWS::StepFunctions::StateMachine
-#     Properties:
-#       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
-#       DefinitionString: !Sub |-
-#     {
-#       "Comment": "A Hello World AWL example using an AWS Lambda Function",
-#       "StartAt": "HelloWorld",
-#       "States": {
-#         "HelloWorld": {
-#           "Type": "Task",
-#           "Resource": "${lambdaArn}",
-#           "Next": "${AWS::Region}"
-#         },
-#         "${AWS::Region}": {
-#           "Type": "Task",
-#           "Resource": "${potato}",
-#           "End": true
-#         }
-#       }
-#     }
-#   - { potato: !Ref SomeFunction,
-#       lambdaArn: !GetAtt [ SomeOtherFunction,  Arn ]}
-
+  # StateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+  #     DefinitionString: !Sub |-
+  #       {
+  #       	"StartAt": "InjectVariables",
+  #       	"States": {
+  #       		"InjectVariables": {
+  #            "Type": "Task",
+  #            "Resource": "${lambda_variable_injection}",
+  #            "Next": "QueryAthena"
+  #           },
+  #       		"QueryAthena": {
+  #       			"Type": "Task",
+  #       			"Resource": "${lambda_athena_query}",
+  #       			"Next": "WaitForQuery"
+  #           },
+  #       		"WaitForQuery": {
+  #       			"Type": "Wait",
+  #       			"Seconds": 60,
+  #       			"Next": "BuildPolicy"
+  #           },
+  #       		"BuildPolicy": {
+  #       			"Type": "Task",
+  #       			"Resource": ${lambda_build_policy}",
+  #       			"Retry": [{
+  #       				"ErrorEquals": [
+  #       					"States.ALL"
+  #               ],
+  #       				"IntervalSeconds": 60,
+  #       				"MaxAttempts": 3,
+  #       				"BackoffRate": 1.5
+  #             }],
+  #       			"Next": "PromptForApproval"
+  #           },
+  #       		"PromptForApproval": {
+  #       			"Type": "Parallel",
+  #       			"End": true,
+  #       			"Branches": [{
+  #       					"StartAt": "Approval",
+  #       					"States": {
+  #       						"Approval": {
+  #       							"Type": "Task",
+  #       							"Resource": ${activity}",
+  #       							"TimeoutSeconds": 3600,
+  #       							"Catch": [{
+  #       								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+  #       								"Next": "PolicyDenial"
+  #                     }],
+  #       							"Next": "PolicyApply"
+  #                   },
+  #       						"PolicyApply": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_revised_policy_approve}",
+  #       							"End": true
+  #                   },
+  #       						"PolicyDenial": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_revised_policy_deny}",
+  #       							"End": true
+  #                   }
+  #                 }
+  #               },
+  #               {
+  #       					"StartAt": "WaitForCode",
+  #       					"States": {
+  #       						"WaitForCode": {
+  #       							"Type": "Wait",
+  #       							"Seconds": 3,
+  #       							"Next": "GenerateCode"
+  #                   },
+  #       						"GenerateCode": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_get_task_token}",
+  #       							"Next": "SendApprovalRequest"
+  #                   },
+  #       						"SendApprovalRequest": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_email_approval_request}",
+  #       							"End": true
+  #                   }
+  #                 }
+  #               }
+  #             ]
+  #           }
+  #         }
+  #       }
+  #       - {
+  #           lambda_variable_injection:      !GetAtt [ SecurityFairyVariableInjection, Arn],
+  #           lambda_athena_query:            !GetAtt [ SecurityFairyAthenaQuery,       Arn],
+  #           lambda_build_policy:            !GetAtt [ SecurityFairyPolicyGenerator,   Arn],
+  #           activity:                       !GetAtt [ SecurityFairyApprovalActivity,  Arn],
+  #           lambda_revised_policy_approve:  !GetAtt [ SecurityFairyApplyPolicy,       Arn],
+  #           lambda_revised_policy_deny:     !GetAtt [ SecurityFairyDenyPolicy,        Arn],
+  #           lambda_get_task_token:          !GetAtt [ SecurityFairyGetTaskToken,      Arn],
+  #           lambda_email_approval_request:  !GetAtt [ SecurityFairyEmailApproval,     Arn]}
 
 #   SecurityFairyS3BucketPolicy:
 #     Type: "AWS::S3::BucketPolicy"
