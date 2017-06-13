@@ -1,5 +1,5 @@
 {
-	"StartAt": "QueryAthena",
+	"StartAt": "InjectVariables",
 	"States": {
 		"InjectVariables": {
      "Type": "Task",
@@ -47,12 +47,12 @@
 						},
 						"PolicyApply": {
 							"Type": "Task",
-							"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_policy_apply",
+							"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_revised_policy_approve",
 							"End": true
 						},
 						"PolicyDenial": {
 							"Type": "Task",
-							"Resource": "",
+							"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_revised_policy_deny",
 							"End": true
 						}
 					}
@@ -67,7 +67,7 @@
 						},
 						"GenerateCode": {
 							"Type": "Task",
-							"Resource": "",
+							"Resource": "arn:aws:lambda:us-west-2:281782457076:function:security_fairy_get_task_token",
 							"Next": "SendApprovalRequest"
 						},
 						"SendApprovalRequest": {

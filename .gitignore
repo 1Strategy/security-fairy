@@ -98,3 +98,33 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# libraries
+include/
+jmespath/
+jmespath-0.9.3.dist-info/
+requests/
+requests-2.17.3.dist-info/
+s3transfer/
+s3transfer-0.1.10.dist-info/
+six-1.10.0.dist-info/
+urllib3/
+urllib3-1.21.1.dist-info/
+bin/
+boto3/
+boto3-1.4.4.dist-info/
+botocore/
+botocore-1.5.65.dist-info/
+dateutil/
+concurrent/
+chardet/
+chardet-3.0.4.dist-info/
+certifi/
+certifi-2017.4.17.dist-info/
+docutils/
+idna/
+idna-2.5.dist-info/
+docutils-0.13.1.dist-info/
+python_dateutil-2.6.0.dist-info/
+futures-3.1.1.dist-info/
+six.py
