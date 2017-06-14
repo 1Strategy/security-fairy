@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='training', region_name='us-east-1')
 except Exception as e:
     session = boto3.session.Session()
 
@@ -42,6 +42,8 @@ def execute_query(entity_arn, num_days, s3_bucket):
         }
     }
 
+
+
     athena_client = session.client('athena')
     execution = athena_client.start_query_execution(QueryString=hql,
                                                     ResultConfiguration=config)
@@ -52,21 +54,21 @@ def execute_query(entity_arn, num_days, s3_bucket):
     return execution['QueryExecutionId']
 
 
-
 def build_escaped_arn(entity_arn):
 
     split_arn   = re.split('/|:', entity_arn)
-    escaped_arn = "arn:aws:sts:" + split_arn[4] + ":assumed-role/\\" + split_arn[6]
+    escaped_arn = "arn:aws:sts::" + split_arn[4] + ":assumed-role\\/" + split_arn[6]
     print(escaped_arn)
     return escaped_arn
 
 if __name__ == '__main__':
+    # arn:aws:sts::281782457076:assumed-role\/1s_tear_down_role\/.+
+
     lambda_handler(
         {
             "entity_arn": "arn:aws:iam::281782457076:assumed-role/1s_tear_down_role",
-            "num_days": "-30"
+            "num_days": "-30",
+            "s3_bucket": "1s-potato-east"
         },
         {}
     )
-# if __name__ == '__main__':
-#     build_escaped_arn('arn:aws:iam::281782457076:assumed-role/1s_tear_down_role')

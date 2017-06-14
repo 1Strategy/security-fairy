@@ -11,34 +11,20 @@ class NoResults(Exception):
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='training', region_name='us-east-1')
 except Exception as e:
     session = boto3.session.Session()
 
 max_policy_size = {
-    'user':2048,    # User policy size cannot exceed 2,048 characters
-    'role':10240,   # Role policy size cannot exceed 10,240 characters
-    'group':5120    # Group policy size cannot exceed 5,120 characters
+    'user' : 2048,    # User policy size cannot exceed 2,048 characters
+    'role' : 10240,   # Role policy size cannot exceed 10,240 characters
+    'group': 5120    # Group policy size cannot exceed 5,120 characters
 }
-
-
-# Connect to Athena
-
-# Requested
-
-# Get existing
-
-# Email token
-
-"""
-for testing Athena Query Id:
-    query_execution_id = 8d544e31-37af-4eb2-acf3-b5eda9f108bd
-"""
 
 
 def lambda_handler(event, context):
 
-    query_execution_id = event.get('query_execution_id')
+    query_execution_id = event.get('execution_id')
 
     if query_execution_id is None:
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
@@ -51,7 +37,6 @@ def lambda_handler(event, context):
 
     query_action_policy   = build_policy_from_query_actions(service_level_actions)
     # existing_entity_policies = get_existing_entity_policies(entity_arn)
-    print(query_action_policy)
 
     write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn, event.get('dynamodb_table','security_fairy_dynamodb_table'))
 
@@ -61,9 +46,9 @@ def lambda_handler(event, context):
 
 def get_query_results(query_execution_id):
 
-    athena_client   = session.client('athena', region_name='us-east-1')
+    athena_client   = session.client('athena')
     result_set      = []
-    query_state     = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
+    query_state     = athena_client.get_query_execution(QueryExecutionId=query_execution_id)['QueryExecution']['Status']['State']
     print(query_state['QueryExecution']['Status']['State'])
     #
     if query_state in ['FAILED','CANCELLED']:
@@ -121,7 +106,7 @@ def get_existing_entity_policies(entity_arn):
 def build_policy_from_query_actions(service_level_actions):
 
     built_policies  = []
-
+    policy_num = 0
     built_policy    = {
         "Version": "2012-10-17",
         "Statement": []
@@ -132,7 +117,8 @@ def build_policy_from_query_actions(service_level_actions):
         api_permissions = []
 
         for item in value:
-            api_permissions.append("{}:{}".format(key,item).encode('ascii', 'ignore'))
+            api_permissions.append("{key}:{item}".format(key=key,item=item).encode('ascii', 'ignore'))
+
 
         built_policy['Statement'].append(
                 {
@@ -140,15 +126,20 @@ def build_policy_from_query_actions(service_level_actions):
                     "Action": api_permissions,
                     "Effect": "Allow",
                     "Resource": "*"
-                }
-        )
+                })
+
+        # if len(json.dumps(built_policy['Statement'])) > max_policy_size['role'] - 1000:
+        #     print(len(json.dumps(built_policy['Statement'])))
+        #     policy_num += 1;
+
     return json.dumps(built_policy)
+
 
 def write_policies_to_dynamodb(execution_id, policies, entity_arn, dynamodb_table):
 
 
     dynamodb_client = session.client('dynamodb')
-    dynamodb_client.put_item(TableName='security_fairy_dynamodb_table',
+    dynamodb_client.put_item(TableName=dynamodb_table,
                              Item={
                                 "execution_id":{
                                     "S": execution_id
@@ -179,7 +170,8 @@ def get_entity_arn(result_set):
     return "arn:aws:iam:" + split_arn[4] + ":role/" + split_arn[6]
 
 if __name__ == '__main__':
-    # print(get_query_results('8d544e31-37af-4eb2-acf3-b5eda9f108bd'))
-    lambda_handler({
-        'query_execution_id': '8d544e31-37af-4eb2-acf3-b5eda9f108bd'
+
+    lambda_handler(
+    {
+      "execution_id": "3f4c49d2-465d-4c6a-8e97-ba0ddfd6fc1c"
     },{})
