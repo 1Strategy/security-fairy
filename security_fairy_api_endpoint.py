@@ -22,6 +22,7 @@ def lambda_handler(event, context):
 
     # Default API Response returns an error
     domain = get_domain(event)
+    method = event['httpMethod']
 
     if method == 'GET':
         return api_website(event, domain)
@@ -32,6 +33,7 @@ def lambda_handler(event, context):
     return api_return_payload
 
 def post_response(event, domain):
+    print(event)
 
     try:
         inputs = validate_inputs(event)
@@ -41,6 +43,7 @@ def post_response(event, domain):
         api_return_payload['body'] = 'Inputs are valid.'
 
     except Exception as error:
+        print(error)
         api_return_payload['statusCode'] = 500
         api_return_payload['body'] = "Unsuccessful:\n {error}".format(error=error)
 
@@ -56,10 +59,12 @@ def get_domain(event):
     # Extracts the domain from event object based on for both api gateway URLs
     # or custom domains
     if 'amazonaws.com' in event['headers']['Host']:
-        return "https://{domain}/{stage}/".format(domain=event['headers']['Host'],
-                                                         stage=event['requestContext']['stage'])
+        return "https://{domain}/{stage}{path}".format(domain=event['headers']['Host'],
+                                                       stage=event['requestContext']['stage'],
+                                                       path=event['path'])
     else:
-        return "https://{domain}/".format(domain=event['headers']['Host'])
+        return "https://{domain}{path}".format(domain=event['headers']['Host'],
+                                               path=event['path'])
 
 
 def validate_inputs(event):
@@ -139,9 +144,9 @@ def api_website(event, domain):
         $("button").click(function(){
           var entity_arn = document.getElementById("entity_arn").value;
           var dict = {};
-          dict["destination_url"] = entity_arn;
+          dict["entity_arn"] = entity_arn;
           if (document.getElementById("num_days").value != "") {
-              dict["custom_token"] = document.getElementById("num_days").value;
+              dict["num_days"] = Number(document.getElementById("num_days").value);
           }
 
           $.ajax({
