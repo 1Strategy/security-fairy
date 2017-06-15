@@ -49,14 +49,12 @@ def get_query_results(query_execution_id):
     athena_client   = session.client('athena')
     result_set      = []
     query_state     = athena_client.get_query_execution(QueryExecutionId=query_execution_id)['QueryExecution']['Status']['State']
-    print(query_state['QueryExecution']['Status']['State'])
-    #
+
     if query_state in ['FAILED','CANCELLED']:
         raise RuntimeError("Query failed to execute")
 
     if query_state in ['QUEUED','RUNNING']:
         raise Exception("Query still running")
-
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
