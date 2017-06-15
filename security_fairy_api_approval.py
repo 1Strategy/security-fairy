@@ -105,9 +105,11 @@ def api_website(event, domain):
                                                                         }
                                                     }
                                                 )['Item']
-        new_policy = response_item['new_policy']['S']
-        entity_arn = response_item['entity_arn']['S']
+        new_policy  = response_item['new_policy']['S']
+        entity_arn  = response_item['entity_arn']['S']
+        entity_name = entity_arn.split('/')[1]
         print(response_item)
+        
     except Exception as error:
         print(error)
         new_policy = {"Error": "This executionId has either expired or is invalid."}
@@ -169,6 +171,9 @@ def api_website(event, domain):
                 $("#approve").click(function(){
                   console.log("Approve button clicked");
                   submitRequest("approve");
+                  sleep(1000);
+                  var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/$entity_name";
+                  window.location(url);
                 });
                 $("#deny").click(function(){
                   console.log("deny button clicked");
@@ -190,7 +195,7 @@ def api_website(event, domain):
             </body>
             </html>"""
 
-    replace_dict = dict(new_policy=new_policy, domain=domain, entity_arn=entity_arn)
+    replace_dict = dict(new_policy=new_policy, domain=domain, entity_arn=entity_arn, entity_name=entity_name)
     string.Template(body).safe_substitute(replace_dict)
 
     return {
