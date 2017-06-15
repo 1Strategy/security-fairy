@@ -4,15 +4,17 @@ import re
 from botocore.exceptions import ClientError
 
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='training', region_name='us-east-1')
 except Exception as e:
     session = boto3.session.Session()
 
 
 def lambda_handler(event, context):
 
+    print(event)
     try:
         execution_id    = event['execution_id']
+        print(execution_id)
         policy_object   = get_revised_policy(execution_id)
         entity_name     = get_entity_name_from_arn(policy_object['entity_arn'])
 
@@ -25,6 +27,7 @@ def lambda_handler(event, context):
 
 def apply_revised_policy(policy_object):
 
+    print(policy_object)
     iam_client  = session.client('iam')
 
     entity_arn  = policy_object['entity_arn']
@@ -54,16 +57,17 @@ def get_revised_policy(execution_id):
 
     return_response = {}
     try:
-        dynamodb_response = session.client('dynamodb', region_name = 'us-west-2') \
-                        .get_item(  TableName='security_fairy_pending_approval',
+        dynamodb_response = session.client('dynamodb') \
+                        .get_item(  TableName='security_fairy_dynamodb_table',
                                     Key={
-                                        "id":{
+                                        "execution_id":{
                                             "S": execution_id
                                             }
                                         }
                                  )
         return_response['policy']       = dynamodb_response['Item']['new_policy']['S']
         return_response['entity_arn']   = dynamodb_response['Item']['entity_arn']['S']
+        print(return_response)
         return return_response
 
     except Exception as e:
@@ -77,8 +81,8 @@ def get_entity_name_from_arn(entity_arn):
 
 
 if __name__ == '__main__':
-    lambda_handler({
-        'exeuction_id':'8d544e31-37af-4eb2-acf3-b5eda9f108bd'
+    lambda_handler({"task_token": "AAAAKgAAAAIAAAAAAAAAAWCc/0ebSQGby/dUh0UmVoQaq5e7rLu2Otf33CR24g3tUU3YxlN5b25Xb42KwueRGbjZslgseVIF5x3Dg0kw9vMTziYrw0Mv0BhqgmEqWavee5bZlL4AmfFSW7lrQmfO/IjevsBBjJ/uIEX86HQ8v7SoygQJouuTyN8ViwDOErsepiKd5ee7PE1vcF5Aa9RGR/vD6elypRzcNWSnRjzfO4T60Z/G9Ig9uAFVqWWvIcUlt17SUZIG6toaCMMWQ/tm+13gSERKWHhZwFpL0EzV4TLN4DT7bDP9y7VUHqcyXRulL9+EDuQgLBy1dCUa9dyX0zcC2iSAXv7MrUliHXSHculk0nvu3u/aWPzDtRZl5MWdM+gBN6oEIIyBaLW+pQ9S6sRyi1BhtoWuBs4ev+bvqJdLtua51rP/78U7+5MkDhMg4b/VP6O4J+sQrwEMNa171hmzNcsC1zJzm7l9dRTFIVuMOTwz+5SWnse2wwc+mePcjqx1gfGQG7yvW9MAez18AdSzwPNPtcDvI4M12DPRAGNbjgXCIHeBWeKdv3arUX79ts5YJUB9fklKoTrf2J5lGf0adf2bJhlYwN4zH3Yqm9I=", "execution_id": "a6d34be0-683f-4c99-bc9e-0ca711e191b0"
+
     }, {})
 
 # if __name__ == '__main__':
