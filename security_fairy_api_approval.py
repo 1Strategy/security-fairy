@@ -98,15 +98,16 @@ def api_website(event, domain):
     try:
         execution_id = event['queryStringParameters']['execution-id']
         print(execution_id)
-        new_policy   = dynamodb_client.get_item( TableName="security_fairy_dynamodb_table",#os.environ['dynamodb_table'],
+        response_item   = dynamodb_client.get_item( TableName="security_fairy_dynamodb_table",#os.environ['dynamodb_table'],
                                                  Key={
                                                         "execution_id": {
                                                                             "S": "{execution_id}".format(execution_id=execution_id)
                                                                         }
                                                     }
-                                                )['Item']['new_policy']['S']
-
-        print(new_policy)
+                                                )['Item']
+        new_policy = response_item['new_policy']['S']
+        entity_arn = response_item['entity_arn']['S']
+        print(response_item)
     except Exception as error:
         print(error)
         new_policy = {"Error": "This executionId has either expired or is invalid."}
@@ -181,7 +182,7 @@ def api_website(event, domain):
             <center>
             <title>IAM Security Fairy</title>
             <h1><span class="glyphicon glyphicon-fire text-danger" ></span> IAM Security Fairy</h1>
-
+            <div class="code"><pre>$entity_arn</pre></div>
             <div class="code"><pre id='output'></pre></div>
             <button class="btn btn-primary" id='approve'>Approve</button>
             <button class="btn btn-danger" id='deny'>Deny</button>
@@ -189,7 +190,7 @@ def api_website(event, domain):
             </body>
             </html>"""
 
-    replace_dict = dict(new_policy=new_policy, domain=domain)
+    replace_dict = dict(new_policy=new_policy, domain=domain, entity_arn=entity_arn)
     string.Template(body).safe_substitute(replace_dict)
 
     return {
