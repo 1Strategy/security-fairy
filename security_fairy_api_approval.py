@@ -160,10 +160,15 @@ def api_website(event, domain):
                   document.getElementById("output").innerHTML = responseData;
               },
               error: function (responseData) {
-                  alert('POST failed.'+ JSON.stringify(responseData));
+                  alert('POST failed: '+ JSON.stringify(responseData));
               }
             });
 
+            };
+
+            function redirect(){
+                var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/$entity_name";
+                document.location.href = url;
             };
 
             $(document).ready(function(){
@@ -172,8 +177,7 @@ def api_website(event, domain):
                 $("#approve").click(function(){
                   console.log("Approve button clicked");
                   submitRequest("approve");
-                  var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/$entity_name";
-                  document.location.href = url;
+                  setTimeout(redirect,2000);
                 });
                 $("#deny").click(function(){
                   console.log("deny button clicked");
