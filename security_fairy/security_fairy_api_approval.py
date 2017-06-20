@@ -5,21 +5,27 @@ and waits for the user to Approve or Cancel the policy
 change.
 """
 
+
 import string
 import json
 import boto3
 from requests.utils import unquote
+from botocore.exceptions import ProfileNotFound
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
-                                    region_name='us-east-1')
-except Exception as e:
+                                    region_name='us-east-1'
+                                   )
+except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
 
 def lambda_handler(event, context):
+    """ Executed by the Lambda service.
 
-    """Function executed by the Lambda service."""
+    Returns the API website for users who are at the Approve
+    or Cancel stage of the Security Fairy tool.
+    """
 
     api_response = {
         "statusCode": 500,
@@ -35,21 +41,18 @@ def lambda_handler(event, context):
         return api_website(event, domain)
 
     if method == 'POST':
-        return token_task(event, domain)
+        return token_task(event)
 
     # Default API Response returns an error
     return api_response
 
 
 def get_domain(event):
-    """Retrieve the domain that will display the new policy."""
+    """Return the domain that will display the new policy."""
 
-    # Supports test invocations from API Gateway
     if event['headers'] is None:
         return "https://testinvocation/approve"
 
-    # Extracts the domain from event object based on for both api gateway URLs
-    # or custom domains
     if 'amazonaws.com' in event['headers']['Host']:
         return "https://{domain}/{stage}/".format(domain=event['headers']['Host'],
                                                   stage=event['requestContext']['stage'])
@@ -57,7 +60,7 @@ def get_domain(event):
         return "https://{domain}/".format(domain=event['headers']['Host'])
 
 
-def token_task(event, domain):
+def token_task(event):
     """Return the Step Function token task."""
 
     sfn_client = SESSION.client('stepfunctions')
