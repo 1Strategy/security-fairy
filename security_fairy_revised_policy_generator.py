@@ -137,18 +137,17 @@ def write_policies_to_dynamodb(execution_id, policies, entity_arn, dynamodb_tabl
 
 
     dynamodb_client = session.client('dynamodb')
-    dynamodb_client.put_item(TableName=dynamodb_table,
-                             Item={
-                                "execution_id":{
-                                    "S": execution_id
-                                },
-                                "new_policy":{
-                                    "S": policies
-                                },
-                                "entity_arn":
-                                {
-                                    "S":entity_arn
-                                }
+    dynamodb_client.put_item(   TableName=dynamodb_table,
+                                Item={
+                                    "execution_id": {
+                                        "S": execution_id
+                                    },
+                                    "new_policy": {
+                                        "S": policies
+                                    },
+                                    "entity_arn": {
+                                        "S":entity_arn
+                                    }
                              })
 
 
@@ -172,4 +171,4 @@ if __name__ == '__main__':
     lambda_handler(
     {
       "execution_id": "3f4c49d2-465d-4c6a-8e97-ba0ddfd6fc1c"
-    },{})
+    }, {})
