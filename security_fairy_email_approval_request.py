@@ -22,6 +22,7 @@ def lambda_handler(event, context):
 
     sns_client = session.client('sns')
     sns_arn =  event['sns_arn']
+    response = sns_client.list_subscriptions_by_topic(TopicArn=event['sns_arn'])
 
     # Build message
     message = 'Approve changes from Security Fairy here: {approval_url}'.format(approval_url=approval_url)
