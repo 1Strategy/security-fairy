@@ -10,26 +10,28 @@ except Exception:
 
 
 def lambda_handler(event, context):
-
+    """This function attaches an updated managed IAM policy to a role"""
     print(event)
     try:
         execution_id    = event['execution_id']
-        dynamodb_table  = event.get('dynamodb_table', os.environ['dynamodb_table'])
+        dynamodb_table  = 'security_fairy_dynamodb_table'#event.get('dynamodb_table', os.environ['dynamodb_table'])
 
         policy_object   = get_revised_policy(execution_id, dynamodb_table)
         entity_name     = get_entity_name_from_arn(policy_object['entity_arn'])
 
         existing_policies = get_existing_managed_policies(entity_name)
+        print(existing_policies)
         preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
+
         detach_existing_policies(entity_name, existing_policies)
         apply_revised_policy(policy_object)
 
     except Exception as error:
-        print(error)
+        print('Lambda function error: {error}'.format(error=error))
 
 
 def apply_revised_policy(policy_object):
-
+    """Creates or updates a managed IAM with the generated permissions"""
     entity_arn  = policy_object['entity_arn']
     entity_name = get_entity_name_from_arn(entity_arn)
     policy      = policy_object['policy']
@@ -45,9 +47,10 @@ def apply_revised_policy(policy_object):
         policy_arn = entity_arn.split('/')[0].replace('role','policy/security-fairy/') + policy_name
         create_new_policy_version(policy_arn, policy)
 
-def create_and_attached_policy(policy_name, policy):
 
-    iam_client = session.client('iam')
+def create_and_attached_policy(entity_name, policy_name, policy):
+
+    iam_client          = session.client('iam')
     creation_response   = iam_client.create_policy( PolicyName=policy_name,
                                                     Path='/security-fairy/',
                                                     PolicyDocument=policy,
@@ -99,17 +102,17 @@ def preserve_existing_policies(execution_id, existing_policies, dynamodb_table):
                                 AttributeUpdates={
                                     "existing_policies": {
                                         "Value":{"SS": existing_policies}
-                                    }
-                             })
+                                    }})
 
 
 def detach_existing_policies(entity_name, existing_policies):
-
+    """Take existing managed IAM policies and remove them from the role"""
     print("Detaching Policies: ")
+    print(existing_policies)
     for policy in existing_policies:
-        print(policy['PolicyArn'])
+        print(policy)
         session.client('iam').detach_role_policy(  RoleName=entity_name,
-                                                   PolicyArn=policy['PolicyArn'])
+                                                   PolicyArn=policy)
 
 
 def get_revised_policy(execution_id, dynamodb_table):
@@ -144,21 +147,13 @@ if __name__ == '__main__':
     # execution_id        = '830eb4f7-364f-44b2-8617-578276ce2270'
     # preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
 
-    # lambda_handler({
-    #     "execution_id": "c40e4cc1-a88d-4a99-8d54-6ffc0b07e4af"
-    # }, {})
-
-    # if __name__ == '__main__':
-    #     detach_existing_policies('arn:aws:iam::281782457076:role/1s_security_fairy_role')
-    # if __name__ == '__main__':
-    #     get_revised_policy('8d544e31-37af-4eb2-acf3-b5eda9f108bd')
-    # if __name__ == '__main__':
-    #     apply_revised_policy({'policy': u'{"Version": "2012-10-17", "Statement": [{"Action": ["ec2:DescribeAddresses"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyEc2"}, {"Action": ["logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs1"}, {"Action": ["iam:GetGroup"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyIam"}, {"Action": ["lambda:ListFunctions20150331", "lambda:DeleteFunction20150331"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLambda"}, {"Action": ["logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs2"}, {"Action": ["logs:CreateLogGroup", "logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs5"}, {"Action": ["kms:Decrypt"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyKms"}]}', 'entity_arn': u'arn:aws:iam::281782457076:role/1s_security_fairy_role'})
-
-    policy     = '{"Version": "2012-10-17", "Statement": [{"Action": ["ec2:DescribeAddresses"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyEc2"}, {"Action": ["logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs1"}, {"Action": ["iam:GetGroup"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyIam"}, {"Action": ["lambda:ListFunctions20150331", "lambda:DeleteFunction20150331"], "Resource": "*",      "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLambda"}, {"Action": ["logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs2"}, {"Action": ["logs:CreateLogGroup", "logs:CreateLogStream"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyLogs5"}, {"Action": ["kms:Decrypt"], "Resource": "*", "Effect": "Allow", "Sid": "SecurityFairyBuiltPolicyKms"}]}'
-    entity_arn = 'arn:aws:iam::281782457076:role/1s_security_fairy_role'
-    policy_arn = 'arn:aws:iam::281782457076:policy/security-fairy/1s-security-fairy-role-security-fairy-revised-policy'
-    create_new_policy_version(policy_arn, policy)
-    # [{u'PolicyName': 'AmazonS3FullAccess', u'PolicyArn': 'arn:aws:iam::aws:policy/AmazonS3FullAccess'}, {u'PolicyName': '1s-security-fairy-role-security-fairy-revised-policy', u'PolicyArn': 'arn:aws:iam::281782457076:policy/security-fairy/1s-security-fairy-role-security-fairy-revised-policy'}, {u'PolicyName': 'AmazonDynamoDBFullAccess', u'PolicyArn': 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'}, {u'PolicyName': 'AdministratorAccess', u'PolicyArn': 'arn:aws:iam::aws:policy/AdministratorAccess'}]
-
+    lambda_handler({
+        "execution_id": "31d595d8-d747-4187-b313-6d6fb988247f",
+        "dynamodb_table": "security_fairy_dynamodb_table"
+    }, {})
+    # print(get_entity_name_from_arn('get_entity_name_from_arn'))
+    # existing_policies = ['arn:aws:iam::aws:policy/AmazonS3FullAccess', 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess', 'arn:aws:iam::aws:policy/AdministratorAccess']
+    # dynamodb_table = 'security_fairy_dynamodb_table'
+    # execution_id = '4bb5d1ad-17ed-43d7-a06b-59ead4a9cf00'
+    # preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
     # print(get_existing_managed_policies('1s_security_fairy_role'))
