@@ -10,7 +10,7 @@ import re
 import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
-
+from __future__ import print
 
 try:
     SESSION = boto3.session.Session(profile_name='training', region_name='us-east-1')
@@ -45,20 +45,16 @@ def lambda_handler(event, context):
     if query_execution_id is None:
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
-    raw_query_results = get_query_results(query_execution_id)
-
-    entity_arn = get_entity_arn(raw_query_results)
-
+    raw_query_results     = get_query_results(query_execution_id)
+    entity_arn            = get_entity_arn(raw_query_results)
     service_level_actions = get_permissions_from_query(raw_query_results)
-
-    query_action_policy = build_policy_from_query_actions(service_level_actions)
+    query_action_policy   = build_policy_from_query_actions(service_level_actions)
     # existing_entity_policies = get_existing_entity_policies(entity_arn)
-
-    write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn, event.get('dynamodb_table', 'security_fairy_dynamodb_table'))
-
+    write_policies_to_dynamodb(query_execution_id, query_action_policy, entity_arn, event.get('dynamodb_table','security_fairy_dynamodb_table'))
     event['execution_id'] = query_execution_id
 
     return event
+
 
 def get_query_results(query_execution_id):
     """Retrieve result set from Athena query"""
@@ -79,6 +75,7 @@ def get_query_results(query_execution_id):
         print results
         for result in results["ResultSet"]["Rows"][1:]:
             result_set.append(result["Data"])
+        print(result_set)
 
     except ClientError as cle:
         print cle
@@ -106,6 +103,43 @@ def get_permissions_from_query(result_set):
                     permissions[service].append(action)
     return permissions
     # {u'iam': [u'GetGroup'], u'lambda': [u'ListFunctions20150331', u'DeleteFunction20150331'], u'kms': [u'Decrypt'], u'ec2': [u'DescribeAddresses'], u'logs': [u'CreateLogStream', u'CreateLogGroup']}
+
+def refactored_get_permissions_from_query(result_set):
+
+    permissions = {}
+
+    for result in result_set:
+        service = get_service_alias(result[1]['VarCharValue'].split('.')[0])
+        actions = result[2]['VarCharValue'].strip('[').strip(']').split(', ')
+        compiled_actions = compile_actions(service, actions)
+        permissions.update(compiled_actions)
+
+    return permissions
+
+
+def compile_actions(service, actions):
+    """ This is a stub for a sub function of get_permissions_from_query(result_set)
+        specifically with the intention of handling lambda permissions with give
+        legacy names for the API calls in CloudTrail e.g. ListFunctions20150331 vs ListFunctions
+        Which causes access denieds in a new policy
+    """
+    permissions = {}
+    for action in actions:
+
+        if service == 'lambda':
+            pattern = re.compile(r'^([a-zA-z]*)(201).*')
+            if pattern.match(action):
+                action = action.split('201')[0]
+                print(action)
+
+        if permissions.get(service) is None:
+            permissions[service]=[action]
+
+        elif permissions.get(service) is not None:
+            if action not in permissions[service]:
+                permissions[service].append(action)
+
+    return permissions
 
 
 def get_existing_entity_policies(entity_arn):

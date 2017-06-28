@@ -120,6 +120,7 @@ Resources:
       Timeout: 30
       Policies:
       - AmazonDynamoDBFullAccess
+      - AWSStepFunctionsFullAccess
       Environment:
         Variables:
           dynamodb_table: !Ref SecurityFairyDynamoDB
@@ -146,6 +147,7 @@ Resources:
       Policies:
       - AmazonDynamoDBFullAccess
       - AdministratorAccess
+      - AWSStepFunctionsFullAccess
       Runtime: python2.7
       Timeout: 30
 

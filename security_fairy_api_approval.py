@@ -54,8 +54,8 @@ def get_domain(event):
         return "https://testinvocation/approve"
 
     if 'amazonaws.com' in event['headers']['Host']:
-        return "https://{domain}/{stage}/".format(domain=event['headers']['Host'],
-                                                  stage=event['requestContext']['stage'])
+        return "https://{domain}/{stage}/".format(  domain=event['headers']['Host'],
+                                                    stage=event['requestContext']['stage'])
     else:
         return "https://{domain}/".format(domain=event['headers']['Host'])
 
@@ -97,20 +97,25 @@ def token_task(event):
 
 def api_website(event, domain):
     """Displays a front end website for Approval or Cancel by the user."""
+    dynamodb_client = session.client('dynamodb')
+    entity_arn  = ''
+    entity_name = ''
 
     dynamodb_client = SESSION.client('dynamodb')
     try:
         execution_id = event['queryStringParameters']['execution-id']
-        print execution_id
-        policy_obj = dynamodb_client.get_item(TableName="security_fairy_dynamodb_table",
-                                              #os.environ['dynamodb_table'],
-                                              Key={
-                                                  "execution_id": {
-                                                      "S": "{e_id}".format(e_id=execution_id)
-                                                  }
-                                              }
-                                             )
-        new_policy = policy_obj['Item']['new_policy']['S']
+        print(execution_id)
+        response_item   = dynamodb_client.get_item( TableName=os.environ['dynamodb_table'],
+                                                    Key={
+                                                        "execution_id": {
+                                                            "S": "{execution_id}".format(execution_id=execution_id)
+                                                        }
+                                                    })['Item']
+        new_policy  = response_item['new_policy']['S']
+        entity_arn  = response_item['entity_arn']['S']
+        entity_name = entity_arn.split('/')[1]
+        print(response_item)
+
     except Exception as error:
         print error
         new_policy = {"Error": "This executionId has either expired or is invalid."}
@@ -161,9 +166,15 @@ def api_website(event, domain):
                   document.getElementById("output").innerHTML = responseData;
               },
               error: function (responseData) {
-                  alert('POST failed.'+ JSON.stringify(responseData));
+                  alert('POST failed: '+ JSON.stringify(responseData));
               }
             });
+
+            };
+
+            function redirect(){
+                var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/$entity_name";
+                document.location.href = url;
             };
 
             $(document).ready(function(){
@@ -172,6 +183,7 @@ def api_website(event, domain):
                 $("#approve").click(function(){
                   console.log("Approve button clicked");
                   submitRequest("approve");
+                  setTimeout(redirect,2000);
                 });
                 $("#deny").click(function(){
                   console.log("deny button clicked");
@@ -185,15 +197,15 @@ def api_website(event, domain):
             <center>
             <title>IAM Security Fairy</title>
             <h1><span class="glyphicon glyphicon-fire text-danger" ></span> IAM Security Fairy</h1>
-
+            <div class="code"><pre>$entity_arn</pre></div>
             <div class="code"><pre id='output'></pre></div>
-            <button class="btn btn-primary" id='approve'>Approve</button>
-            <button class="btn btn-danger" id='deny'>Deny</button>
+            <button class="btn btn-primary" id='approve'>Apply</button>
+            <button class="btn btn-danger" id='deny'>Cancel</button>
             </center>
             </body>
             </html>"""
 
-    replace_dict = dict(new_policy=new_policy, domain=domain)
+    replace_dict = dict(new_policy=new_policy, domain=domain, entity_arn=entity_arn, entity_name=entity_name)
     string.Template(body).safe_substitute(replace_dict)
 
     return {

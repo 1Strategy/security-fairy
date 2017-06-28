@@ -10,13 +10,16 @@ Lambda functions.
 import json
 import re
 import os
+import string
 import boto3
 from botocore.exceptions import ProfileNotFound
+
 
 try:
     SESSION = boto3.session.Session(profile_name='training')
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
+
 
 
 def lambda_handler(event, context):
@@ -32,22 +35,63 @@ def lambda_handler(event, context):
         'headers':{
             'Content-Type':'application/json'
         },
-        'body':'Interal Server Error'
+        'body':'Security Fairy Internal Server Error.'
     }
+
+
+    domain = get_domain(event)
+    method = event['httpMethod']
+
+    if method == 'GET':
+        return api_website(event, domain)
+
+    if method == 'POST':
+        return post_response(event, domain)
+
+    return api_return_payload
+
+def post_response(event, domain):
+
+    api_return_payload = {
+        'statusCode': 500,
+        'headers':{
+            'Content-Type':'application/json'
+        },
+        'body':'Security Fairy Internal Server Error.'
+    }
+
+    print(event)
 
     try:
         inputs = validate_inputs(event)
         invoke_state_machine(inputs)
-        api_return_payload['body'] = 'Inputs are valid.'
+
         api_return_payload['statusCode'] = 200
+        api_return_payload['body'] = 'Inputs are valid. You should receive an email shortly.'
 
     except Exception as error:
-        print error
-        api_return_payload['body'] = "Unsuccessful:\n {error}".format(error=error)
+        print(error)
+        api_return_payload['statusCode'] = 200
+        api_return_payload['body'] = "Unsuccessful: {error}".format(error=error)
 
     print api_return_payload
     return api_return_payload
 
+def get_domain(event):
+
+    # Supports test invocations from API Gateway
+    if event['headers'] is None:
+        return "https://testinvocation/start"
+
+    # Extracts the domain from event object based on for both api gateway URLs
+    # or custom domains
+    if 'amazonaws.com' in event['headers']['Host']:
+        return "https://{domain}/{stage}{path}".format(domain=event['headers']['Host'],
+                                                       stage=event['requestContext']['stage'],
+                                                       path=event['path'])
+    else:
+        return "https://{domain}{path}".format(domain=event['headers']['Host'],
+                                               path=event['path'])
 
 def invoke_state_machine(inputs):
     """Invoke state machine"""
@@ -56,7 +100,7 @@ def invoke_state_machine(inputs):
     response = sfn_client.start_execution(stateMachineArn=os.environ['state_machine'],
                                           input=json.dumps(inputs)
                                          )
-    print response
+    print(response)
 
 
 def validate_inputs(event):
@@ -89,10 +133,17 @@ def validate_entity_arn(entity_arn):
     #                  arn:aws:sts::281782457076:assumed-role/1S-Admins/alex
     # Users are invalid: arn:aws:iam::842337631775:user/aaron
 
-    if 'user' in entity_arn:
+    split_arn   = re.split('/|:', entity_arn)
+    try:
+        entity_type = split_arn[5]
+    except Exception:
+        raise ValueError('Malformed ARN. Please enter a role ARN.')
+    print(entity_type)
+
+    if 'user' in entity_type:
         raise ValueError('Users not supported. Please enter a role ARN.')
 
-    if 'group' in entity_arn:
+    if 'group' in entity_type:
         raise ValueError('Groups not supported. Please enter a role ARN.')
 
     pattern = re.compile("arn:aws:(sts|iam)::(\d{12})?:(role|assumed-role)\/(.*)")
@@ -103,18 +154,105 @@ def validate_entity_arn(entity_arn):
     assumed_role_pattern = re.compile("arn:aws:sts::(\d{12})?:assumed-role\/(.*)\/(.*)")
 
     if not assumed_role_pattern.match(entity_arn):
-
-        split_arn = re.split('/|:', entity_arn)
-        refactored_arn = "arn:aws:sts:" + split_arn[4] + ":assumed-role/" + split_arn[6]
-        entity_arn = refactored_arn
-        SESSION.client('iam').get_role(RoleName=split_arn[6])
+        refactored_arn  = "arn:aws:sts::" + split_arn[4] + ":assumed-role/" + split_arn[6]
+        entity_arn      = refactored_arn
+        session.client('iam').get_role(RoleName=split_arn[6])
 
     return entity_arn
 
 
+def invoke_state_machine(inputs):
+    print(json.dumps(inputs))
+    response = session.client('stepfunctions').start_execution( stateMachineArn=os.environ['state_machine'],
+                                                                input=json.dumps(inputs))
+    print(response)
+
+
+def api_website(event, domain):
+
+    body = """
+    <html>
+    <body bgcolor=\"#E6E6FA\">
+    <head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <style>
+    .form {
+        padding-left: 1cm;
+    }
+
+    .div{
+      padding-left: 1cm;
+    }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script>
+
+    $(document).ready(function(){
+        $("button").click(function(){
+          var entity_arn = document.getElementById("entity_arn").value;
+          var dict = {};
+          dict["entity_arn"] = entity_arn;
+          if (document.getElementById("num_days").value != "") {
+              dict["num_days"] = Number(document.getElementById("num_days").value);
+          }
+          else{
+              dict["num_days"] = 30;
+          };
+
+          $.ajax({
+            type: 'POST',
+            headers: {
+                'Content-Type':'application/json',
+                'Accept':'text/html'
+            },
+            url:'$domain',
+            crossDomain: true,
+            data: JSON.stringify(dict),
+            dataType: 'text',
+            success: function(responseData) {
+                alert(responseData);
+                //document.getElementById("id").innerHTML = responseData;
+                document.getElementById("entity_arn").value="";
+                document.getElementById("num_days").value="";
+            },
+            error: function (responseData) {
+                //alert(responseData);
+                alert('POST failed.'+ JSON.stringify(responseData));
+            }
+          });
+        });
+    });
+    </script>
+    </head>
+    <title>Security Fairy IAM Policy Remediation Tool</title>
+    <h1 class="div">Security Fairy IAM Remediation Tool</h1>
+    <body>
+
+      <form class="form" action="" method="post">
+            <textarea rows="1" cols="50" name="text" id="entity_arn" placeholder="arn:aws:iam::0123456789:role/roleName"></textarea>
+      </form>
+      <form class="form" action="" method="post">
+            <textarea rows="1" cols="50" name="text" id="num_days" placeholder="Scan the logs for between 1-30 days (Enter Number)"></textarea>
+      </form>
+
+
+    <div class="div"><button class="btn btn-primary">Audit Entity</button></div>
+    <div class="div" id="id"></div>
+    </body>
+    </html>
+    """
+
+    return {
+                "statusCode": 200,
+                "headers": {
+                    "Content-Type": 'text/html',
+                    "Access-Control-Allow-Origin": "*"
+                },
+                "body": string.Template(body).safe_substitute({"domain": domain})
+    }
+
+
 if __name__ == '__main__':
-    lambda_handler(
-        {
-            'body': "{\"entity_arn\":\"arn:aws:sts::281782457076:role/1S-Admins\",\"num_days\":30}"
-        }, {}
-    )
+    print(validate_entity_arn('arn:aws:iam::842337631775:role/1S-Admins'))

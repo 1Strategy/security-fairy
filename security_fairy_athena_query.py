@@ -60,10 +60,9 @@ def execute_query(entity_arn, num_days, s3_bucket):
 
     athena_client = SESSION.client('athena')
     execution = athena_client.start_query_execution(QueryString=hql,
-                                                    ResultConfiguration=config
-                                                   )
-    print "Query ID:"
-    print execution['QueryExecutionId']
+                                                    ResultConfiguration=config)
+    print("Query ID:")
+    print(execution['QueryExecutionId'])
 
     return execution['QueryExecutionId']
 
