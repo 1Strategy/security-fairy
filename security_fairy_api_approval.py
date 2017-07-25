@@ -5,12 +5,13 @@ and waits for the user to Approve or Cancel the policy
 change.
 """
 
-
+from __future__ import print_function
 import string
 import json
 import boto3
 from requests.utils import unquote
 from botocore.exceptions import ProfileNotFound
+
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
@@ -71,10 +72,10 @@ def token_task(event):
 
     try:
         if 'approve' in approved_or_denied:
-            print 'approved'
+            print('approved')
             response = sfn_client.send_task_success(taskToken=task_token,
                                                     output=json.dumps(body))
-            print response
+            print(response)
             response_string = "New policy applied."
 
         if 'deny' in approved_or_denied:
@@ -84,7 +85,7 @@ def token_task(event):
             response_string = "Revised Policy deleted."
 
     except Exception as e:
-        print e
+        print(e)
 
     return {
         "statusCode":200,
@@ -97,7 +98,7 @@ def token_task(event):
 
 def api_website(event, domain):
     """Displays a front end website for Approval or Cancel by the user."""
-    dynamodb_client = session.client('dynamodb')
+    dynamodb_client = SESSION.client('dynamodb')
     entity_arn  = ''
     entity_name = ''
 
@@ -117,7 +118,7 @@ def api_website(event, domain):
         print(response_item)
 
     except Exception as error:
-        print error
+        print(error)
         new_policy = {"Error": "This executionId has either expired or is invalid."}
 
     body = """
@@ -278,5 +279,5 @@ if __name__ == '__main__':
         u'path': u'/deny',
         u'isBase64Encoded': False
     }
-    print "Lambda Handler:"
-    print lambda_handler(EVENT, {})
+    print("Lambda Handler:")
+    print(lambda_handler(EVENT, {}))

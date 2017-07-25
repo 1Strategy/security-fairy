@@ -1,15 +1,10 @@
 {
-  "tests/test_general.py::TestApiApprovalClass::()::test_api_website": true, 
-  "tests/test_general.py::TestApiApprovalClass::()::test_token_task_approve": true, 
-  "tests/test_general.py::TestApiApprovalClass::()::test_token_task_deny": true, 
-  "tests/test_general.py::TestAthenaQueryClass::()::test_execute_query": true, 
-  "tests/test_general.py::TestRevisedPolicyApprove::()::test_get_revised_policy": true, 
-  "tests/test_general.py::TestRevisedPolicyGenerator::()::test_build_policy_from_query_actions": true, 
-  "tests/test_general.py::TestRevisedPolicyGenerator::()::test_get_permissions_from_query": true, 
-  "tests/test_lambda_handlers.py::TestLambdaHandlers::()::test_athena_query": true, 
-  "tests/test_lambda_handlers.py::TestLambdaHandlers::()::test_email_approval_request": true, 
-  "tests/test_lambda_handlers.py::TestLambdaHandlers::()::test_get_task_token": true, 
-  "tests/test_lambda_handlers.py::TestLambdaHandlers::()::test_revised_policy_approve": true, 
-  "tests/test_lambda_handlers.py::TestLambdaHandlers::()::test_revised_policy_deny": true, 
-  "tests/test_lambda_handlers.py::TestLambdaHandlers::()::test_variable_injection": true
+  "test_general.py::TestApiApprovalClass::()::test_api_website": true, 
+  "test_general.py::TestApiApprovalClass::()::test_token_task_approve": true, 
+  "test_general.py::TestApiApprovalClass::()::test_token_task_deny": true, 
+  "test_general.py::TestAthenaQueryClass::()::test_execute_query": true, 
+  "test_general.py::TestRevisedPolicyApprove::()::test_get_entity_name_from_arn": true, 
+  "test_general.py::TestRevisedPolicyApprove::()::test_get_revised_policy": true, 
+  "test_general.py::TestRevisedPolicyGenerator::()::test_build_policy_from_query_actions": true, 
+  "test_general.py::TestRevisedPolicyGenerator::()::test_get_permissions_from_query": true
 }

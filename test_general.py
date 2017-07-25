@@ -21,11 +21,11 @@ Todo:
 
 
 import pytest
-import security_fairy.security_fairy_api_approval as sfaa
-import security_fairy.security_fairy_api_endpoint as sfae
-import security_fairy.security_fairy_athena_query as sfaq
-import security_fairy.security_fairy_revised_policy_approve as sfrpa
-import security_fairy.security_fairy_revised_policy_generator as sfrpg
+import security_fairy_api_approval as sfaa
+import security_fairy_api_endpoint as sfae
+import security_fairy_athena_query as sfaq
+import security_fairy_revised_policy_approve as sfrpa
+import security_fairy_revised_policy_generator as sfrpg
 
 
 class TestApiApprovalClass(object):

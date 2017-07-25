@@ -4,13 +4,13 @@ Builds a revised policy for the queried
 role using data retrieved from Athena.
 """
 
-
+from __future__ import print_function
 import json
 import re
 import boto3
 from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
-from __future__ import print
+
 
 try:
     SESSION = boto3.session.Session(profile_name='training', region_name='us-east-1')
@@ -62,7 +62,7 @@ def get_query_results(query_execution_id):
     athena_client = SESSION.client('athena')
     result_set = []
     query_state = athena_client.get_query_execution(QueryExecutionId=query_execution_id)['QueryExecution']['Status']['State']
-    print query_state['QueryExecution']['Status']['State']
+    print(query_state['QueryExecution']['Status']['State'])
 
     if query_state in ['FAILED', 'CANCELLED']:
         raise RuntimeError("Query failed to execute")
@@ -72,13 +72,13 @@ def get_query_results(query_execution_id):
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
-        print results
+        print(results)
         for result in results["ResultSet"]["Rows"][1:]:
             result_set.append(result["Data"])
         print(result_set)
 
     except ClientError as cle:
-        print cle
+        print(cle)
 
     if not result_set:
         raise NoResults("Athena ResultSet {result_set}".format(result_set=result_set))
@@ -155,7 +155,7 @@ def get_existing_entity_policies(entity_arn):
     existing_policies = attached_policies['AttachedPolicies']
     for existing_policy in existing_policies:
         if 'arn:aws:iam::aws:policy' not in existing_policy['PolicyArn']:
-            print existing_policy
+            print(existing_policy)
     return policies
 
 
@@ -228,9 +228,9 @@ def get_entity_arn(result_set):
     """Extract entity ARN"""
 
     entity_arn = result_set[0][0]['VarCharValue']
-    print entity_arn
+    print(entity_arn)
     split_arn = re.split('/|:', entity_arn)
-    print split_arn
+    print(split_arn)
     return "arn:aws:iam:" + split_arn[4] + ":role/" + split_arn[6]
 
 
