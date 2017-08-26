@@ -51,6 +51,7 @@ def lambda_handler(event, context):
 
     return api_return_payload
 
+
 def post_response(event, domain):
 
     api_return_payload = {
