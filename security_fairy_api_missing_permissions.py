@@ -156,6 +156,7 @@ def api_website(event, domain):
             <center>
             <title>IAM Security Fairy</title>
             <h1><span class="glyphicon glyphicon-fire text-danger" ></span> IAM Security Fairy</h1>
+            <h2></h2>
             <div class="code"><pre>$entity_arn</pre></div>
             <div class="code"><pre id='output'></pre></div>
             <button class="btn btn-primary" id='approve'>Apply</button>
@@ -178,64 +179,5 @@ def api_website(event, domain):
 
 
 if __name__ == '__main__':
-    EVENT = {
-        u'body': u'{"task_token":"AAAAKgAAAAIAAAAAAAAAAbwck0ZXLox0l5UCsjE3iQN3iBJNAu9ZWh/ElSrNKHdVP90ZxgrPZvFQZMnl+dcD4J9VdwieXvx2s6VBpQ1AsIrJLYM7y9D1bDRvrct34LA4YldibA7gw3dz5YmvScrCiLX8DLPT5BiKkpKtwN5pVXqlC0fZcSQ4Z2ZdSvAN/awy6S678p5QyxsJlqe3pQpbIZfmQ4XjboqpLMIWSMDkYajtBuxMgtfyX879s5QHzCZ9d0B29WI3FV0PS07xMYrqn+2Nu/2l64JvKMMNBknJZiM2c92AQFZMFvOvMCHnxbtLqZjZpWTaW5Z3O0Cv5B91l6T7bZvk6Dp7QZ6fAdYlQw8S/YT0Vz6z/sMPDf3bxPfGJ9b4cjVHbLX0nK4BEvlAW/OEXJGGYG9X2V/gUoRMs/RwEenzvxi5raZPsHlCqOZzmuszC1H4duNQBaRjF2vzOY60wyOoP7/shrdfPvGKh9LMMUi/ir2y9W8hbCb6R1MZERE9yOIUlK+c5NHZf64JnRvNG2tUF4efOjVIbZfLrayDEAgLqeOtlXSy7yOLxSjdmqcVKXmD2AdnLg2yi/HYyyUc3fQPZES6nPOMpuLz27E=","execution_id":"9487c326-23fc-46d6-a2c2-69b6342b5162"}',
-        u'resource': u'/{approval}',
-        u'requestContext': {
-            u'resourceId': u'ktk3jq',
-            u'apiId': u'ezwzmmh526',
-            u'resourcePath': u'/{approval}',
-            u'httpMethod': u'POST',
-            u'requestId': u'2938ad50-50a7-11e7-bff1-93579d44e732',
-            u'path': u'/Prod/deny',
-            u'accountId': u'281782457076',
-            u'identity': {
-                u'apiKey': u'',
-                u'userArn': None,
-                u'cognitoAuthenticationType': None,
-                u'accessKey': None,
-                u'caller': None,
-                u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-                u'user': None,
-                u'cognitoIdentityPoolId': None,
-                u'cognitoIdentityId': None,
-                u'cognitoAuthenticationProvider': None,
-                u'sourceIp': u'71.219.116.20',
-                u'accountId': None
-            },
-            u'stage': u'Prod'
-        },
-        u'queryStringParameters': None,
-        u'httpMethod': u'POST',
-        u'pathParameters': {
-            u'approval': u'deny'
-        },
-        u'headers': {
-            u'origin': u'https://ezwzmmh526.execute-api.us-east-1.amazonaws.com',
-            u'Via': u'2.0 3c6cd3705576f791e49d58b73a16e8f0.cloudfront.net (CloudFront)',
-            u'Accept-Language': u'en-US,en;q=0.8',
-            u'Accept-Encoding': u'gzip, deflate, br',
-            u'CloudFront-Is-SmartTV-Viewer': u'false',
-            u'CloudFront-Forwarded-Proto': u'https',
-            u'X-Forwarded-For': u'71.219.116.20, 216.137.42.62',
-            u'CloudFront-Viewer-Country': u'US',
-            u'Accept': u'text/html',
-            u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-            u'X-Amzn-Trace-Id': u'Root=1-59409bf5-31a996a67ad3927c5c312295',
-            u'dnt': u'1',
-            u'Host': u'ezwzmmh526.execute-api.us-east-1.amazonaws.com',
-            u'X-Forwarded-Proto': u'https',
-            u'Referer': u'https://ezwzmmh526.execute-api.us-east-1.amazonaws.com/Prod/approve?execution-id=9487c326-23fc-46d6-a2c2-69b6342b5162&task-token=AAAAKgAAAAIAAAAAAAAAAbwck0ZXLox0l5UCsjE3iQN3iBJNAu9ZWh%2FElSrNKHdVP90ZxgrPZvFQZMnl%2BdcD4J9VdwieXvx2s6VBpQ1AsIrJLYM7y9D1bDRvrct34LA4YldibA7gw3dz5YmvScrCiLX8DLPT5BiKkpKtwN5pVXqlC0fZcSQ4Z2ZdSvAN%2Fawy6S678p5QyxsJlqe3pQpbIZfmQ4XjboqpLMIWSMDkYajtBuxMgtfyX879s5QHzCZ9d0B29WI3FV0PS07xMYrqn%2B2Nu%2F2l64JvKMMNBknJZiM2c92AQFZMFvOvMCHnxbtLqZjZpWTaW5Z3O0Cv5B91l6T7bZvk6Dp7QZ6fAdYlQw8S%2FYT0Vz6z%2FsMPDf3bxPfGJ9b4cjVHbLX0nK4BEvlAW%2FOEXJGGYG9X2V%2FgUoRMs%2FRwEenzvxi5raZPsHlCqOZzmuszC1H4duNQBaRjF2vzOY60wyOoP7%2FshrdfPvGKh9LMMUi%2Fir2y9W8hbCb6R1MZERE9yOIUlK%2Bc5NHZf64JnRvNG2tUF4efOjVIbZfLrayDEAgLqeOtlXSy7yOLxSjdmqcVKXmD2AdnLg2yi%2FHYyyUc3fQPZES6nPOMpuLz27E%3D',
-            u'CloudFront-Is-Tablet-Viewer': u'false',
-            u'X-Forwarded-Port': u'443',
-            u'X-Amz-Cf-Id': u'ZVhtdhkgqjEmMBhWxew_9Xuq91gaPrxLIowzD0R0eBJgXzXj8Y6rfQ==',
-            u'CloudFront-Is-Mobile-Viewer': u'false',
-            u'content-type': u'application/json',
-            u'CloudFront-Is-Desktop-Viewer': u'true'
-        },
-        u'stageVariables': None,
-        u'path': u'/deny',
-        u'isBase64Encoded': False
-    }
-    print("Lambda Handler:")
-    print(lambda_handler(EVENT, {}))
+    EVENT = { }
+    lambda_handler(EVENT, {})
