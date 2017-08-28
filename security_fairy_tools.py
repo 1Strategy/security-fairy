@@ -133,6 +133,8 @@ class IAMStatement:
             "Resource": self.resource,
             "Action": self.actions
         }
+
+
 logging_level = logging.INFO
 statement = IAMStatement('Allow',["pot:atosoup","goat:cheese"],'*', logging_level = logging_level)
 statement.get_statement()
