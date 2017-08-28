@@ -1,19 +1,35 @@
-import boto3
+"""API Endpoint
+
+Validates inputs to the Security Fairy tool,
+then creates and executes the State Machine
+which orchestrates the Security Fairy
+Lambda functions.
+"""
+
+
 import json
 import re
 import os
 import string
+import boto3
+from botocore.exceptions import ProfileNotFound
+
 
 try:
-    session = boto3.session.Session(profile_name='training')
-except Exception as e:
-    session = boto3.session.Session()
+    SESSION = boto3.session.Session(profile_name='training')
+except ProfileNotFound as pnf:
+    SESSION = boto3.session.Session()
 
 
 
 def lambda_handler(event, context):
+    """ Executed by the Lambda service.
 
-    # Default API Response returns an error
+    Returns the validated inputs and invokes
+    the State Machine that orchestrates
+    Security Fairy.
+    """
+
     api_return_payload = {
         'statusCode': 500,
         'headers':{
@@ -58,7 +74,7 @@ def post_response(event, domain):
         api_return_payload['statusCode'] = 200
         api_return_payload['body'] = "Unsuccessful: {error}".format(error=error)
 
-    print(api_return_payload)
+    print api_return_payload
     return api_return_payload
 
 def get_domain(event):
@@ -77,15 +93,20 @@ def get_domain(event):
         return "https://{domain}{path}".format(domain=event['headers']['Host'],
                                                path=event['path'])
 
+def invoke_state_machine(inputs):
+    """Invoke state machine"""
+    print json.dumps(inputs)
+    sfn_client = SESSION.client('stepfunctions')
+    response = sfn_client.start_execution(stateMachineArn=os.environ['state_machine'],
+                                          input=json.dumps(inputs)
+                                         )
+    print(response)
+
 
 def validate_inputs(event):
+    """Validate inputs"""
     input_payload = json.loads(event['body'])
-    num_days = abs(input_payload.get('num_days', 14))
-    if num_days > 30 or num_days < 1:
-        print(num_days)
-        raise ValueError('Valid number of days is between 1 and 30 inclusive.')
-
-
+    num_days = validate_date_window(input_payload.get('num_days', 7))
     entity_arn = validate_entity_arn(input_payload.get('entity_arn'))
 
     return {
@@ -93,9 +114,21 @@ def validate_inputs(event):
         'entity_arn': entity_arn
     }
 
-def validate_entity_arn(entity_arn):
 
-    # account_number = session.client('sts').get_caller_identity()["Account"]
+def validate_date_window(days):
+    """Validate the date range for the Security Fairy query"""
+    window = abs(days)
+    if window > 30 or window < 1:
+        print window
+        raise ValueError('Valid number of days is between 1 and 30 inclusive.')
+
+    return window
+
+
+def validate_entity_arn(entity_arn):
+    """Validate entity ARN"""
+
+    # account_number = SESSION.client('sts').get_caller_identity()["Account"]
     # Roles are valid: arn:aws:iam::842337631775:role/1S-Admins
     #                  arn:aws:sts::281782457076:assumed-role/1S-Admins/alex
     # Users are invalid: arn:aws:iam::842337631775:user/aaron

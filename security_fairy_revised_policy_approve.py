@@ -1,54 +1,65 @@
-import boto3
+"""Revised Policy Approve
+
+Implements the changes suggested by Security
+Fairy. Detaches the existing policy for the
+queried role and attaches the revised policy.
+"""
+
+
 import re
-import os
-from botocore.exceptions import ClientError
+import boto3
+from botocore.exceptions import ProfileNotFound
 
 try:
-    session = boto3.session.Session(profile_name='training', region_name='us-east-1')
-except Exception:
-    session = boto3.session.Session()
+    SESSION = boto3.session.Session(profile_name='training')
+except ProfileNotFound as pnf:
+    SESSION = boto3.session.Session()
 
 
 def lambda_handler(event, context):
-    """This function attaches an updated managed IAM policy to a role"""
-    print(event)
+    """ Executed by the Lambda service.
+
+    Detaches the existing managed policies from the
+    queried role and attaches the Security Fairy
+    revised policy.
+    """
+
     try:
         execution_id    = event['execution_id']
-        dynamodb_table  = 'security_fairy_dynamodb_table'#event.get('dynamodb_table', os.environ['dynamodb_table'])
+        dynamodb_table  = event.get('dynamodb_table', os.environ['dynamodb_table'])
 
         policy_object   = get_revised_policy(execution_id, dynamodb_table)
         entity_name     = get_entity_name_from_arn(policy_object['entity_arn'])
 
         existing_policies = get_existing_managed_policies(entity_name)
-        print(existing_policies)
         preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
-
         detach_existing_policies(entity_name, existing_policies)
         apply_revised_policy(policy_object)
 
     except Exception as error:
-        print('Lambda function error: {error}'.format(error=error))
-
+        print(error)
 
 def apply_revised_policy(policy_object):
-    """Creates or updates a managed IAM with the generated permissions"""
-    entity_arn  = policy_object['entity_arn']
+    """Attach Security Fairy's suggested policy"""
+
+    iam_client = SESSION.client('iam')
+
+    entity_arn = policy_object['entity_arn']
+    policy = policy_object['policy']
     entity_name = get_entity_name_from_arn(entity_arn)
-    policy      = policy_object['policy']
-    policy_name = "{entity_name}-security-fairy-revised-policy".format(entity_name=entity_name).replace("_","-")
+
+    format_name = "{entity_name}_security_fairy_revised_policy".format(
+        entity_name=entity_name
+        )
 
     print("Attaching: ")
-    print(policy_name)
+    print(format_name)
 
-    try:
-        create_and_attached_policy(entity_name, policy_name, policy)
-    except Exception as e:
-        print(e)
-        policy_arn = entity_arn.split('/')[0].replace('role','policy/security-fairy/') + policy_name
-        create_new_policy_version(policy_arn, policy)
-
-
-def create_and_attached_policy(entity_name, policy_name, policy):
+    iam_client.put_role_policy(
+        RoleName=entity_name,
+        PolicyName=format_name,
+        PolicyDocument=policy
+        )
 
     iam_client          = session.client('iam')
     creation_response   = iam_client.create_policy( PolicyName=policy_name,
@@ -63,7 +74,7 @@ def create_and_attached_policy(entity_name, policy_name, policy):
 
 def create_new_policy_version(policy_arn, policy):
 
-    iam_client  = session.client('iam')
+    iam_client  = SESSION.client('iam')
     versions    = iam_client.list_policy_versions( PolicyArn=policy_arn)['Versions']
     print(versions)
     if len(versions) > 1:
@@ -80,7 +91,7 @@ def create_new_policy_version(policy_arn, policy):
 
 def get_existing_managed_policies(entity_name):
 
-    attached_policies = session.client('iam').list_attached_role_policies(RoleName=entity_name)['AttachedPolicies']
+    attached_policies = SESSION.client('iam').list_attached_role_policies(RoleName=entity_name)['AttachedPolicies']
     existing_policies = []
     for policy in attached_policies:
         print(policy['PolicyArn'])
@@ -111,32 +122,35 @@ def detach_existing_policies(entity_name, existing_policies):
     print(existing_policies)
     for policy in existing_policies:
         print(policy)
-        session.client('iam').detach_role_policy(  RoleName=entity_name,
+        SESSION.client('iam').detach_role_policy(  RoleName=entity_name,
                                                    PolicyArn=policy)
 
 
 def get_revised_policy(execution_id, dynamodb_table):
-
+    """Retrieve Security Fairy's suggested policy"""
     return_response = {}
     try:
-        dynamodb_response = session.client('dynamodb')\
-                        .get_item(TableName=dynamodb_table,
-                                  Key={
-                                            "execution_id": {
-                                                "S": execution_id
-                                            }
-                                        })
+        dynamodb_response = SESSION.client('dynamodb')\
+                                    .get_item( TableName=dynamodb_table,
+                                               Key={
+                                                "execution_id": {
+                                                    "S": execution_id
+                                                }
+                                            })
         return_response['policy']       = dynamodb_response['Item']['new_policy']['S']
         return_response['entity_arn']   = dynamodb_response['Item']['entity_arn']['S']
         print(return_response)
         return return_response
 
     except Exception as e:
-        print(e)
-        raise ValueError('Execution Id doesn\'t exist or has expired. Security-fairy must be rerun.')
+        print e
+        raise ValueError('Execution Id doesn\'t exist or has expired. \
+                          Security-fairy must be rerun.'
+                        )
 
 
 def get_entity_name_from_arn(entity_arn):
+    """Parse entity name from ARN"""
     entity_name = re.split('/|:', entity_arn)[6]
     return entity_name
 
