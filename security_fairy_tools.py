@@ -90,7 +90,7 @@ class IAMPolicy:
         logging.basicConfig(level=logging_level)
         self.statements         = []
         self.service_actions    = {}
-        self.MAX_POLICY_SIZE    = {
+        self.max_policy_size    = {
             'user' : 2048,    # User policy size cannot exceed 2,048 characters
             'role' : 10240,   # Role policy size cannot exceed 10,240 characters
             'group': 5120    # Group policy size cannot exceed 5,120 characters
@@ -99,7 +99,7 @@ class IAMPolicy:
     def __add_statement__(self, statement):
         if not isinstance(statement, IAMStatement):
             raise Exception('This Method only supports objects of type IAMStatement')
-        self.statements.append(statement.get_statement())
+        self.statements.append(statement)
 
     def add_actions(self, statement_actions):
         for statement_action in statement_actions:
@@ -144,25 +144,22 @@ class IAMPolicy:
                                             resource="*",
                                             sid='SecurityFairy{service}Policy'.format(service=service.capitalize())
                                         )
-            self.statements.append(statement.get_statement())
+            self.__add_statement__(statement)
 
     def get_policy(self):
         self.__build_statements__()
+        built_policy_statements = []
+        for statement in self.statements:
+            built_policy_statements.append(statement.get_statement())
         policy = {
                     "Version": "2012-10-17",
-                    "Statement": self.statements
+                    "Statement": built_policy_statements
                 }
         logging.debug(policy)
         return policy
 
     def print_policy(self):
-        self.__build_statements__()
-        policy = {
-                    "Version": "2012-10-17",
-                    "Statement": self.statements
-                 }
-        logging.debug(policy)
-        return json.dumps(policy)
+        return json.dumps(self.get_policy())
 
 class IAMStatement:
     def __init__(self, effect, actions, resource, sid='', logging_level = logging.DEBUG):
@@ -181,7 +178,6 @@ class IAMStatement:
         if not resource == '*':
             logging.debug(resource)
             raise Exception('Invalid Resource.')
-
         logging.debug(actions)
 
         for action in actions:
