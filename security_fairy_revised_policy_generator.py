@@ -127,9 +127,9 @@ def compile_actions(service, actions):
     for action in actions:
 
         if service == 'lambda':
-            pattern = re.compile(r'^([a-zA-z]*)(201).*')
+            pattern = re.compile(r'^([a-zA-z]*)(20).*')
             if pattern.match(action):
-                action = action.split('201')[0]
+                action = action.split('20')[0]
                 print(action)
 
         if permissions.get(service) is None:

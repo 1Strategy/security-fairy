@@ -48,18 +48,14 @@ def apply_revised_policy(policy_object):
     policy = policy_object['policy']
     entity_name = get_entity_name_from_arn(entity_arn)
 
-    format_name = "{entity_name}_security_fairy_revised_policy".format(
-        entity_name=entity_name
-        )
+    format_name = "{entity_name}_security_fairy_revised_policy".format(entity_name=entity_name)
 
     print("Attaching: ")
     print(format_name)
 
-    iam_client.put_role_policy(
-        RoleName=entity_name,
-        PolicyName=format_name,
-        PolicyDocument=policy
-        )
+    iam_client.put_role_policy( RoleName=entity_name,
+                                PolicyName=format_name,
+                                PolicyDocument=policy)
 
     iam_client          = session.client('iam')
     creation_response   = iam_client.create_policy( PolicyName=policy_name,
