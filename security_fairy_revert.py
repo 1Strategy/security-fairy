@@ -52,7 +52,7 @@ def associate_preexisting_policies(entity_arn):
     # print(response_item)
 
     # for each item in 'existing_policies' attach policy to 'role_arn'
-    # for policy in existing_policies:        
+    # for policy in existing_policies:
     #   attachment_response = iam_client.attach_role_policy(RoleName=entity_arn,
     #                                                       PolicyArn=policy)
 
@@ -68,7 +68,7 @@ def disassociate_security_fairy_policy(entity_arn):
                             .format(account_number=account_number,
                                     entity_name=entity_name
                                     ).replace('_','-')
-    print(policy_arn)
+    logging.debug(policy_arn)
 
     detach_policy(entity_name, policy_arn)
     delete_policy(policy_arn)
@@ -78,7 +78,7 @@ def detach_policy(entity_name, policy_arn):
     try:
         iam_client.detach_role_policy(RoleName=entity_name, PolicyArn=policy_arn)
     except Exception as error:
-        print(error)
+        loggin.debug(error)
 
 
 def delete_policy(policy_arn):
