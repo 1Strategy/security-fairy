@@ -76,14 +76,65 @@ class IAMPolicy:
 
     def __init__(self, logging_level = logging.DEBUG):
         logging.basicConfig(level=logging_level)
-        self.statements = []
+        self.statements         = []
+        self.service_actions    = {}
+        self.MAX_POLICY_SIZE    = {
+            'user' : 2048,    # User policy size cannot exceed 2,048 characters
+            'role' : 10240,   # Role policy size cannot exceed 10,240 characters
+            'group': 5120    # Group policy size cannot exceed 5,120 characters
+        }
 
-    def add_statement(self, statement):
+    def __add_statement__(self, statement):
         if not isinstance(statement, IAMStatement):
             raise Exception('This Method only supports objects of type IAMStatement')
         self.statements.append(statement.get_statement())
 
+    def add_actions(self, statement_actions):
+        for statement_action in statement_actions:
+            self.add_action(statement_action)
+
+    def add_action(self, statement_action):
+
+        split_statement_action = statement_action.split(':')
+
+        if len(split_statement_action) != 2:
+            raise InvalidStatementAction('Invalid Statement: {action} Statement must be \'service:api-action\'.'.format(action=action))
+
+        service = self.__get_service_alias__(split_statement_action[0])
+
+        if service == 'lambda':
+            action = ''.join([i for i in split_statement_action[1] if not i.isdigit()])
+        else:
+            action = split_statement_action[1]
+
+        logging.debug(statement_action)
+        
+        if self.service_actions.get(service, True):
+            self.service_actions[service] = []
+
+        self.service_actions[service].append(action)
+
+    def __get_service_alias__(self, service):
+        service_aliases = {
+            "monitoring": "cloudwatch"
+        }
+        return service_aliases.get(service, service)
+
+    def __build_statements__(self):
+
+        print(self.service_actions)
+
+        # for action in self.service_actions[service]:
+        #     actions_per_service.append(service+":"+action)
+        #     statement = IAMStatement(   effect="Allow",
+        #                                 actions=actions_per_service,
+        #                                 resource="*",
+        #                                 sid='SecurityFairy{service}Policy'.format(service=service.capitalize())
+        #                             )
+        # self.statements.append(statement.get_statement())
+
     def get_policy(self):
+        self.__build_statements__()
         policy = {
                     "Version": "2012-10-17",
                     "Statement": self.statements
@@ -92,6 +143,7 @@ class IAMPolicy:
         return policy
 
     def print_policy(self):
+        self.__build_statements__()
         policy = {
                     "Version": "2012-10-17",
                     "Statement": self.statements
@@ -101,12 +153,13 @@ class IAMPolicy:
 
 
 class IAMStatement:
-    def __init__(self, effect, actions, resource, logging_level = logging.WARNING):
+    def __init__(self, effect, actions, resource, sid='', logging_level = logging.DEBUG):
         logging.basicConfig(level=logging_level)
         self.validate_statement(effect, actions, resource)
         self.actions    = actions
         self.resource   = resource
         self.effect     = effect
+        self.sid        = sid
 
     def validate_statement(self, effect, actions, resource):
         if not effect.lower() in ['allow', 'deny']:
@@ -129,8 +182,12 @@ class IAMStatement:
         if self.actions == []:
             raise Exception('This statement has no Actions')
 
-        return {
+        statement = {
             "Effect": self.effect,
             "Resource": self.resource,
             "Action": self.actions
         }
+        if self.sid != '':
+            statement['Sid'] = self.sid
+
+        return statement
