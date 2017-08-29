@@ -17,7 +17,8 @@ class Arn:
         self.full_arn           = entity_arn
         split_arn               = entity_arn.split(':')
         logging.debug(split_arn)
-        if len(split_arn) < 6:
+
+        if len(split_arn) != 6:
             raise InvalidArn("The given arn is invalid: {entity_arn}".format(entity_arn=entity_arn))
 
         self.entity_name        = ''
@@ -94,7 +95,7 @@ class IAMPolicy:
         policy = {
                     "Version": "2012-10-17",
                     "Statement": self.statements
-                }
+                 }
         logging.debug(policy)
         return json.dumps(policy)
 
