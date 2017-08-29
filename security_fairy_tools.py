@@ -108,8 +108,9 @@ class IAMPolicy:
             action = split_statement_action[1]
 
         logging.debug(statement_action)
-        
-        if self.service_actions.get(service, True):
+        logging.debug(self.service_actions.get(service))
+
+        if self.service_actions.get(service) is None:
             self.service_actions[service] = []
 
         self.service_actions[service].append(action)
@@ -122,16 +123,16 @@ class IAMPolicy:
 
     def __build_statements__(self):
 
-        print(self.service_actions)
-
-        # for action in self.service_actions[service]:
-        #     actions_per_service.append(service+":"+action)
-        #     statement = IAMStatement(   effect="Allow",
-        #                                 actions=actions_per_service,
-        #                                 resource="*",
-        #                                 sid='SecurityFairy{service}Policy'.format(service=service.capitalize())
-        #                             )
-        # self.statements.append(statement.get_statement())
+        for service in self.service_actions:
+            actions_per_service = []
+            for action in self.service_actions[service]:
+                actions_per_service.append(service+":"+action)
+                statement = IAMStatement(   effect="Allow",
+                                            actions=actions_per_service,
+                                            resource="*",
+                                            sid='SecurityFairy{service}Policy'.format(service=service.capitalize())
+                                        )
+            self.statements.append(statement.get_statement())
 
     def get_policy(self):
         self.__build_statements__()
