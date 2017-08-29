@@ -4,7 +4,6 @@ Discards the changes suggested by
 Security Fairy.
 """
 
-
 import json
 import os
 import boto3

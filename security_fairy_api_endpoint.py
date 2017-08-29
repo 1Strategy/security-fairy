@@ -23,7 +23,8 @@ except ProfileNotFound as pnf:
 
 
 def lambda_handler(event, context):
-    """ Executed by the Lambda service.
+    """
+    Executed by the Lambda service.
 
     Returns the validated inputs and invokes
     the State Machine that orchestrates
@@ -49,6 +50,7 @@ def lambda_handler(event, context):
         return post_response(event, domain)
 
     return api_return_payload
+
 
 def post_response(event, domain):
 
