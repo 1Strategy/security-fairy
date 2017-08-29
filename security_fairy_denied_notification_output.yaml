@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: An AWS Serverless Specification template describing your function.
+Parameters:
+  CloudTrailBucket:
+    Default: 1strategy-training-traillogs
+    Description: S3 Bucket where the cloudtrail logs are being sent.
+    Type: String
+Resources:
+  SecurityFairyDeniedNotification:
+    Properties:
+      CodeUri: s3://1s-potato/36be3a0b269d916b5bef839e650ebb14
+      Description: ''
+      Environment:
+        Variables:
+          sns_arn: arn:aws:sns:us-east-1:281782457076:security_fairy_topic
+      Handler: security_fairy_denied_notification.lambda_handler
+      MemorySize: 128
+      Role: arn:aws:iam::281782457076:role/1s_tear_down_role
+      Runtime: python2.7
+      Timeout: 60
+    Type: AWS::Serverless::Function
+Transform: AWS::Serverless-2016-10-31
