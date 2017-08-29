@@ -42,18 +42,23 @@ class Arn:
         logging.debug('Entity:')
         logging.debug(entity)
 
-        if entity[0] == 'role' or 'policy':
-            logging.debug("this entity is a {entity}".format(entity=entity))
+        if entity[0] == 'role' or entity[0] == 'policy':
+            logging.debug("this entity is a {entity}".format(entity=entity[0]))
             self.entity_type    = entity[0]
             self.entity_name    = entity[len(entity)-1]
             self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
             logging.debug('Path:')
             logging.debug(self.path)
+
         elif entity[0] =='assumed-role':
                 logging.debug("this entity is an assumed-role")
+                ['assumed-role', '1s_tear_down_role', 'instance-1235']
                 self.entity_type    = entity[0]
+                logging.debug(self.entity_type)
                 self.entity_name    = entity[1]
+                logging.debug(self.entity_name)
                 self.assuming_entity = entity[2]
+                logging.debug(self.assuming_entity)
         else:
             self.entity_type    = entity[0]
             self.entity_name    = entity[1]
