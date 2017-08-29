@@ -165,7 +165,7 @@ class IAMPolicy:
                 statement = IAMStatement(   effect="Allow",
                                             actions=actions_per_service,
                                             resource="*",
-                                            sid='SecurityFairy{service}Policy'.format(service=service.capitalize())
+                                            sid='SecurityFairyBuilt{service}Policy'.format(service=service.capitalize())
                                         )
             self.__add_statement__(statement)
 
