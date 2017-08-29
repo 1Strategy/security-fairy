@@ -15,12 +15,18 @@ logging_level = logging.INFO
 
 # arn = Arn('arn:aws:iam::281782457076:role/1s_tear_down_role', logging_level = logging.DEBUG)
 # arn = Arn('arn:aws:iam:us-east-1:842337631775:role/service-role/StatesExecutionRole-us-west-2')
-# policy = IAMPolicy(logging_level = logging_level)
-# policy.add_action('lambda:Invoke')
-# policy.add_action('ec2:RunInstances')
-# policy.add_action('ec2:StartInstances')
-# policy.add_action('monitoring:CreateAlarm')
-# print(policy.print_policy())
+policy = IAMPolicy(logging_level = logging_level)
+policy.add_action('lambda:Invoke')
+policy.add_action('lambda:Potato12356')
+policy.add_action('ec2:RunInstances')
+policy.add_action('ec2:StartInstances')
+policy.add_action('monitoring:CreateAlarm')
+print(policy.print_policy())
+
+# arn = Arn('arn:aws:iam::281782457076:assumed-role/1s_tear_down_role/instance-1235', logging_level = logging.DEBUG)
+# print(arn.is_role())
+# print(arn.is_policy())
+# print(arn.is_assumed_role())
 
 def test_iam_policy_class():
     """Test Athena Query"""

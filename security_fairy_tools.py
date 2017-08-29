@@ -10,17 +10,24 @@ class InvalidStatementAction(Exception):
 class Arn:
 
     def __init__(self, entity_arn, logging_level = logging.INFO):
-        """ Create a new point at the given coordinates. """
+        """
+        This class consumes a string and validates that it is a valid
+        Amazon Resource Name entity.
+        """
 
         logging.basicConfig(level=logging_level)
 
-        self.full_arn           = entity_arn
+
         split_arn               = entity_arn.split(':')
         logging.debug(split_arn)
 
         if len(split_arn) != 6:
+            # Throw an error if the string and resultant list don't contain
+            # the 6 sections colon delimited
+            # e.g. arn:aws:iam::123456789012:role/service-role/StatesExecutionRole-us-west-2
             raise InvalidArn("The given arn is invalid: {entity_arn}".format(entity_arn=entity_arn))
 
+        self.full_arn           = entity_arn
         self.entity_name        = ''
         self.entity_type        = ''
         self.path               = ''
@@ -40,15 +47,20 @@ class Arn:
         return False
 
     def is_assumed_role(self):
-        # arn:aws:iam::281782457076:assumed-role/1s_tear_down_role
-        pass
+        if self.entity_type == 'assumed-role' and self.service == 'sts':
+            return True
+        return False
 
     def extract_entity(self, split_arn):
         entity              = split_arn[5].split('/')
         self.entity_type    = entity[0]
         self.entity_name    = entity[len(entity)-1]
         self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
+
+        logging.debug('Path:')
         logging.debug(self.path)
+
+        logging.debug('Entity:')
         logging.debug(entity)
 
     def get_full_arn(self):
@@ -78,7 +90,7 @@ class IAMPolicy:
         logging.basicConfig(level=logging_level)
         self.statements         = []
         self.service_actions    = {}
-        self.MAX_POLICY_SIZE    = {
+        self.max_policy_size    = {
             'user' : 2048,    # User policy size cannot exceed 2,048 characters
             'role' : 10240,   # Role policy size cannot exceed 10,240 characters
             'group': 5120    # Group policy size cannot exceed 5,120 characters
@@ -87,7 +99,7 @@ class IAMPolicy:
     def __add_statement__(self, statement):
         if not isinstance(statement, IAMStatement):
             raise Exception('This Method only supports objects of type IAMStatement')
-        self.statements.append(statement.get_statement())
+        self.statements.append(statement)
 
     def add_actions(self, statement_actions):
         for statement_action in statement_actions:
@@ -132,26 +144,22 @@ class IAMPolicy:
                                             resource="*",
                                             sid='SecurityFairy{service}Policy'.format(service=service.capitalize())
                                         )
-            self.statements.append(statement.get_statement())
+            self.__add_statement__(statement)
 
     def get_policy(self):
         self.__build_statements__()
+        built_policy_statements = []
+        for statement in self.statements:
+            built_policy_statements.append(statement.get_statement())
         policy = {
                     "Version": "2012-10-17",
-                    "Statement": self.statements
+                    "Statement": built_policy_statements
                 }
         logging.debug(policy)
         return policy
 
     def print_policy(self):
-        self.__build_statements__()
-        policy = {
-                    "Version": "2012-10-17",
-                    "Statement": self.statements
-                 }
-        logging.debug(policy)
-        return json.dumps(policy)
-
+        return json.dumps(self.get_policy())
 
 class IAMStatement:
     def __init__(self, effect, actions, resource, sid='', logging_level = logging.DEBUG):
@@ -170,7 +178,6 @@ class IAMStatement:
         if not resource == '*':
             logging.debug(resource)
             raise Exception('Invalid Resource.')
-
         logging.debug(actions)
 
         for action in actions:
