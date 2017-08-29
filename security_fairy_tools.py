@@ -10,17 +10,24 @@ class InvalidStatementAction(Exception):
 class Arn:
 
     def __init__(self, entity_arn, logging_level = logging.INFO):
-        """ Create a new point at the given coordinates. """
+        """
+        This class consumes a string and validates that it is a valid
+        Amazon Resource Name entity.
+        """
 
         logging.basicConfig(level=logging_level)
 
-        self.full_arn           = entity_arn
+
         split_arn               = entity_arn.split(':')
         logging.debug(split_arn)
 
         if len(split_arn) != 6:
+            # Throw an error if the string and resultant list don't contain
+            # the 6 sections colon delimited
+            # e.g. arn:aws:iam::123456789012:role/service-role/StatesExecutionRole-us-west-2
             raise InvalidArn("The given arn is invalid: {entity_arn}".format(entity_arn=entity_arn))
 
+        self.full_arn           = entity_arn
         self.entity_name        = ''
         self.entity_type        = ''
         self.path               = ''
@@ -40,15 +47,20 @@ class Arn:
         return False
 
     def is_assumed_role(self):
-        # arn:aws:iam::281782457076:assumed-role/1s_tear_down_role
-        pass
+        if self.entity_type == 'assumed-role' and self.service == 'sts':
+            return True
+        return False
 
     def extract_entity(self, split_arn):
         entity              = split_arn[5].split('/')
         self.entity_type    = entity[0]
         self.entity_name    = entity[len(entity)-1]
         self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
+
+        logging.debug('Path:')
         logging.debug(self.path)
+
+        logging.debug('Entity:')
         logging.debug(entity)
 
     def get_full_arn(self):
@@ -151,7 +163,6 @@ class IAMPolicy:
                  }
         logging.debug(policy)
         return json.dumps(policy)
-
 
 class IAMStatement:
     def __init__(self, effect, actions, resource, sid='', logging_level = logging.DEBUG):
