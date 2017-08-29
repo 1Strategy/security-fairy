@@ -38,7 +38,6 @@
 						"Approval": {
 							"Type": "Task",
 							"Resource": "arn:aws:states:us-west-2:281782457076:activity:security_fairy_approval_activity",
-							"TimeoutSeconds": 3600,
 							"Catch": [{
 								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
 								"Next": "PolicyDenial"
