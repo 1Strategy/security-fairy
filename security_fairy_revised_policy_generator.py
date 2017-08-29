@@ -15,7 +15,7 @@ from security_fairy_tools import Arn
 from security_fairy_tools import IAMPolicy
 
 
-logging_level = logging.DEBUG
+logging_level = logging.INFO
 logging.basicConfig(level=logging_level)
 
 try:
@@ -51,6 +51,7 @@ def lambda_handler(event, context):
     new_iam_policy = IAMPolicy()
     new_iam_policy.add_actions(service_level_actions)
 
+    logging.info(aws_entity.get_entity_name())
     existing_entity_policies = get_existing_entity_policies_v2(aws_entity.get_entity_name())
     write_policies_to_dynamodb(query_execution_id, new_iam_policy.print_policy(), aws_entity.get_full_arn(), event.get('dynamodb_table','security_fairy_dynamodb_table'))
 
@@ -101,7 +102,7 @@ def get_permissions_from_query_v2(result_set):
     permissions = []
 
     for result in result_set:
-        service = get_service_alias(result[1]['VarCharValue'].split('.')[0])
+        service = result[1]['VarCharValue'].split('.')[0]
         actions = result[2]['VarCharValue'].strip('[').strip(']').split(', ')
         for action in actions:
             permissions.append('{service}:{action}'.format(service=service, action=action))
