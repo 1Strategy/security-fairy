@@ -42,8 +42,8 @@ class Arn:
         logging.debug('Entity:')
         logging.debug(entity)
 
-        if entity[0] == 'role':
-            logging.debug("this entity is a role")
+        if entity[0] == 'role' or 'policy':
+            logging.debug("this entity is a {entity}".format(entity=entity))
             self.entity_type    = entity[0]
             self.entity_name    = entity[len(entity)-1]
             self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
@@ -191,7 +191,8 @@ class IAMStatement:
         self.actions    = actions
         self.resource   = resource
         self.effect     = effect
-        self.sid        = sid
+        if sid != '':
+            self.sid    = sid
 
     def validate_statement(self, effect, actions, resource):
         if not effect.lower() in ['allow', 'deny']:
@@ -201,8 +202,8 @@ class IAMStatement:
         if not resource == '*':
             logging.debug(resource)
             raise Exception('Invalid Resource.')
-        logging.debug(actions)
 
+        logging.debug(actions)
         for action in actions:
             if len(action.split(':')) != 2:
                 raise InvalidStatementAction('Invalid Statement: {action} Statement must be \'service:api-action\'.'.format(action=action))
