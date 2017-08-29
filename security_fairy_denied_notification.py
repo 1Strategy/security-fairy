@@ -1,10 +1,12 @@
 import boto3
 import gzip
 import json
+import logging
 import os
 import re
 from security_fairy_tools import Arn
 
+logging.basicConfig(level=logging.DEBUG)
 
 def lambda_handler(event, context):
 
@@ -34,7 +36,7 @@ def lambda_handler(event, context):
 
     for record in records:
         if record.get('errorCode', None) in ['AccessDenied', 'AccessDeniedException','Client.UnauthorizedOperation']:
-            print(record)
+            logging.debug(record)
             extracted_information = {}
             arn             = Arn(record['userIdentity'].get('arn', None))
             role_name       = arn.get_entity_name()
@@ -49,7 +51,7 @@ def lambda_handler(event, context):
 
             access_denied_records.append(extracted_information)
 
-    print(access_denied_records)
+    logging.debug(access_denied_records)
 
     if access_denied_records:
         response = boto3.client('sns', region_name = 'us-east-1')\
@@ -58,4 +60,5 @@ def lambda_handler(event, context):
                                     Subject='Automated AWS Notification - Access Denied')
 
 if __name__ == '__main__':
-    print('hello')
+    EVENT = {}
+    lambda_handler(EVENT, {})
