@@ -2,6 +2,7 @@ import logging
 from security_fairy_tools import IAMPolicy
 from security_fairy_tools import IAMStatement
 from security_fairy_tools import Arn
+
 logging_level = logging.INFO
 statement = IAMStatement('Allow',["pot:atosoup","goat:cheese"],'*', logging_level = logging_level)
 statement.get_statement()
