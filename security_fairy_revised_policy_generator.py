@@ -8,6 +8,7 @@ from __future__ import print_function
 import json
 import re
 import boto3
+import logging
 from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
 
@@ -24,13 +25,6 @@ __author__ = 'Justin Iravani'
 class NoResults(Exception):
     """No Results Class"""
     pass
-
-
-MAX_POLICY_SIZE = {
-    'user' : 2048,    # User policy size cannot exceed 2,048 characters
-    'role' : 10240,   # Role policy size cannot exceed 10,240 characters
-    'group': 5120    # Group policy size cannot exceed 5,120 characters
-}
 
 
 def lambda_handler(event, context):
