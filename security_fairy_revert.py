@@ -5,9 +5,6 @@ import os
 import re
 from botocore.exceptions import ProfileNotFound
 
-logging.debug('This message should go to the log file')
-logging.info('So should this')
-
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
