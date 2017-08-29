@@ -17,7 +17,6 @@ class Arn:
 
         logging.basicConfig(level=logging_level)
 
-
         split_arn               = entity_arn.split(':')
         logging.debug(split_arn)
 
@@ -31,10 +30,33 @@ class Arn:
         self.entity_name        = ''
         self.entity_type        = ''
         self.path               = ''
+        self.assuming_entity    = ''
         self.account_number     = split_arn[4]
         self.region             = split_arn[3]
         self.service            = split_arn[2]
         self.extract_entity(split_arn)
+
+    def extract_entity(self, split_arn):
+        entity              = split_arn[5].split('/')
+
+        logging.debug('Entity:')
+        logging.debug(entity)
+
+        if entity[0] == 'role':
+            logging.debug("this entity is a role")
+            self.entity_type    = entity[0]
+            self.entity_name    = entity[len(entity)-1]
+            self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
+            logging.debug('Path:')
+            logging.debug(self.path)
+        elif entity[0] =='assumed-role':
+                logging.debug("this entity is an assumed-role")
+                self.entity_type    = entity[0]
+                self.entity_name    = entity[1]
+                self.assuming_entity = entity[2]
+        else:
+            self.entity_type    = entity[0]
+            self.entity_name    = entity[1]
 
     def is_role(self):
         if self.entity_type == 'role':
@@ -51,17 +73,18 @@ class Arn:
             return True
         return False
 
-    def extract_entity(self, split_arn):
-        entity              = split_arn[5].split('/')
-        self.entity_type    = entity[0]
-        self.entity_name    = entity[len(entity)-1]
-        self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
+    def convert_assumed_role_to_role(self):
+        if not self.is_assumed_role():
+            logging.info('ARN is not assumed-role. No action taken')
+        self.full_arn = self.full_arn.replace(':sts:', ':iam:')
+        self.full_arn = self.full_arn.replace(':assumed-role/',':role/')
+        logging.info(self.full_arn)
 
-        logging.debug('Path:')
-        logging.debug(self.path)
+        logging.info('assumed-role converted to role')
 
-        logging.debug('Entity:')
-        logging.debug(entity)
+
+    def __rebuild_full_arn__(self):
+        pass
 
     def get_full_arn(self):
         return self.full_arn
@@ -184,7 +207,6 @@ class IAMStatement:
             if len(action.split(':')) != 2:
                 raise InvalidStatementAction('Invalid Statement: {action} Statement must be \'service:api-action\'.'.format(action=action))
         self.actions = actions
-
 
     def get_statement(self):
         if self.actions == []:
