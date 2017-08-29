@@ -1,4 +1,5 @@
-"""API Approval
+"""
+API Approval
 
 Presents the revised policy created by Security Fairy,
 and waits for the user to Approve or Cancel the policy
@@ -15,8 +16,7 @@ from botocore.exceptions import ProfileNotFound
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
-                                    region_name='us-east-1'
-                                   )
+                                    region_name='us-east-1')
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
