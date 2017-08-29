@@ -176,7 +176,7 @@ def build_policy_from_query_actions(service_level_actions):
         for item in value:
             item_dict = "{key}:{item}"\
                         .format(key=key, item=item)\
-                        .encode('ascii', 'ignore')
+                            .encode('ascii', 'ignore')
 
             api_permissions.append(item_dict)
 
