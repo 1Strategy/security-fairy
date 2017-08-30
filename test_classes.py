@@ -23,11 +23,13 @@ logging_level = logging.INFO
 # policy.add_action('monitoring:CreateAlarm')
 # print(policy.print_policy())
 
-# arn = Arn('arn:aws:sts::281782457076:assumed-role/1s_tear_down_role/lanbda-function-name', logging_level = logging.DEBUG)
-# print(arn.is_role())
-# print(arn.is_policy())
-# print(arn.is_assumed_role())
-
+arn = Arn('arn:aws:sts::281782457076:assumed-role/1s_tear_down_role/lanbda-function-name', logging_level = logging.DEBUG)
+print(arn.is_role())
+print(arn.is_policy())
+print(arn.is_assumed_role())
+print(arn.get_full_arn())
+arn.convert_assumed_role_to_role()
+print(arn.get_full_arn())
 def test_iam_policy_class():
     """Test Athena Query"""
     policy = IAMPolicy(logging_level = logging_level)

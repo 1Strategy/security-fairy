@@ -55,7 +55,7 @@ def associate_preexisting_policies(entity_arn):
 
 def disassociate_security_fairy_policy(entity_arn):
 
-    iam_client = SESSION.client('iam')
+    iam_client      = SESSION.client('iam')
     arn = Arn(entity_arn)
     account_number  = arn.get_account_number()
     entity_name     = arn.get_entity_name()
