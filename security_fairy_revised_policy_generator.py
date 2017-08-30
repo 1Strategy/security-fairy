@@ -46,6 +46,7 @@ def lambda_handler(event, context):
 
     raw_query_results = get_query_results(query_execution_id)
     aws_entity = get_entity_arn_v2(raw_query_results)
+
     service_level_actions = get_permissions_from_query_v2(raw_query_results)
 
     new_iam_policy = IAMPolicy()
@@ -130,7 +131,6 @@ def get_existing_entity_policies_v2(role_name):
 
 def write_policies_to_dynamodb(execution_id, policy, entity_arn, dynamodb_table):
     """Write policies to DynamoDB table"""
-
     dynamodb_client = SESSION.client('dynamodb')
     dynamodb_client.put_item(TableName=dynamodb_table,
                              Item={
@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
     lambda_handler(
         {
-            "execution_id": "5749086e-fd50-44d8-ac57-f7a937cf88f9"
+            "execution_id": "7b12e31a-b77d-4b30-9e13-0565fe465873"
         },
         {}
     )
