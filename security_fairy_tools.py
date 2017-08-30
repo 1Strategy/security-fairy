@@ -52,7 +52,6 @@ class Arn:
 
         elif entity[0] =='assumed-role':
                 logging.debug("this entity is an assumed-role")
-                # ['assumed-role', '1s_tear_down_role', 'instance-1235']
                 self.entity_type    = entity[0]
                 logging.debug(self.entity_type)
                 self.entity_name    = entity[1]
