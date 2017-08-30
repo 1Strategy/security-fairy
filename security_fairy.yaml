@@ -32,6 +32,9 @@ Resources:
       - AdministratorAccess
       Runtime: python2.7
       Timeout: 30
+      # Environment:
+      #   Variables:
+      #     state_machine: !Ref SecurityFairyStateMachine
       Events:
         GetApi:
           Type: Api
@@ -88,6 +91,7 @@ Resources:
       Handler: security_fairy_revised_policy_generator.lambda_handler
       MemorySize: 128
       Policies:
+      - IAMReadOnlyAccess
       - AmazonAthenaFullAccess
       - AmazonDynamoDBFullAccess
       - AmazonS3ReadOnlyAccess
@@ -145,6 +149,7 @@ Resources:
       Handler: security_fairy_revised_policy_approve.lambda_handler
       MemorySize: 128
       Policies:
+      - IAMReadOnlyAccess
       - AmazonDynamoDBFullAccess
       - AdministratorAccess
       - AWSStepFunctionsFullAccess
