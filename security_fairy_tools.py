@@ -9,7 +9,7 @@ class InvalidStatementAction(Exception):
 
 class Arn:
 
-    def __init__(self, entity_arn, logging_level = logging.INFO):
+    def __init__(self, entity_arn, logging_level = logging.DEBUG):
         """
         This class consumes a string and validates that it is a valid
         Amazon Resource Name entity.
@@ -82,6 +82,7 @@ class Arn:
             logging.info('ARN is not assumed-role. No action taken')
         self.full_arn = self.full_arn.replace(':sts:', ':iam:')
         self.full_arn = self.full_arn.replace(':assumed-role/',':role/')
+        self.full_arn = self.full_arn.replace('/'+self.assuming_entity, '')
         logging.info(self.full_arn)
 
         logging.info('assumed-role converted to role')
