@@ -56,10 +56,9 @@ def associate_preexisting_policies(entity_arn):
 def disassociate_security_fairy_policy(entity_arn):
 
     iam_client = SESSION.client('iam')
-
-    split_arn       = re.split('/|:', entity_arn)
-    account_number  = split_arn[4]
-    entity_name     = split_arn[6]
+    arn = Arn(entity_arn)
+    account_number  = arn.get_account_number()
+    entity_name     = arn.get_entity_name()
 
     policy_arn      =  'arn:aws:iam::{account_number}:policy/security-fairy/{entity_name}_security_fairy_revised_policy'\
                             .format(account_number=account_number,

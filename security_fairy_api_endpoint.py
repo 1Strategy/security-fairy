@@ -12,8 +12,9 @@ import re
 import os
 import string
 import boto3
-from botocore.exceptions import ProfileNotFound
 
+from botocore.exceptions import ProfileNotFound
+from security_fairy_tools import Arn
 
 try:
     SESSION = boto3.session.Session(profile_name='training')
@@ -135,37 +136,38 @@ def validate_entity_arn(entity_arn):
     #                  arn:aws:sts::281782457076:assumed-role/1S-Admins/alex
     # Users are invalid: arn:aws:iam::842337631775:user/aaron
 
-    split_arn   = re.split('/|:', entity_arn)
     try:
-        entity_type = split_arn[5]
+        arn = Arn(entity_arn)
     except Exception:
         raise ValueError('Malformed ARN. Please enter a role ARN.')
-    print(entity_type)
+    print(arn.entity_type)
 
-    if 'user' in entity_type:
+    if 'user' in arn.entity_type:
         raise ValueError('Users not supported. Please enter a role ARN.')
 
-    if 'group' in entity_type:
+    if 'group' in arn.entity_type:
         raise ValueError('Groups not supported. Please enter a role ARN.')
 
-    pattern = re.compile("arn:aws:(sts|iam)::(\d{12})?:(role|assumed-role)\/(.*)")
-
-    if not pattern.match(entity_arn):
+    if not arn.is_assumed_role() and not arn.is_role():
         raise ValueError('Invalid Resource ARN.')
+    # pattern = re.compile("arn:aws:(sts|iam)::(\d{12})?:(role|assumed-role)\/(.*)")
+
+    # if not pattern.match(entity_arn):
+    #     raise ValueError('Invalid Resource ARN.')
 
     assumed_role_pattern = re.compile("arn:aws:sts::(\d{12})?:assumed-role\/(.*)\/(.*)")
 
     if not assumed_role_pattern.match(entity_arn):
-        refactored_arn  = "arn:aws:sts::" + split_arn[4] + ":assumed-role/" + split_arn[6]
+        refactored_arn  = "arn:aws:sts::" + arn.get_account_number() + ":assumed-role/" + arn.get_entity_name()
         entity_arn      = refactored_arn
-        session.client('iam').get_role(RoleName=split_arn[6])
+        SESSION.client('iam').get_role(RoleName=arn.get_entity_name())
 
     return entity_arn
 
 
 def invoke_state_machine(inputs):
     print(json.dumps(inputs))
-    response = session.client('stepfunctions').start_execution( stateMachineArn=os.environ['state_machine'],
+    response = SESSION.client('stepfunctions').start_execution( stateMachineArn=os.environ['state_machine'],
                                                                 input=json.dumps(inputs))
     print(response)
 
@@ -257,4 +259,4 @@ def api_website(event, domain):
 
 
 if __name__ == '__main__':
-    print(validate_entity_arn('arn:aws:iam::842337631775:role/1S-Admins'))
+    print(validate_entity_arn('arn:aws:sts::842337631775:assumed-role/1S-Admins/potato'))

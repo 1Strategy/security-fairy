@@ -7,8 +7,12 @@ query to Athena.
 
 import re
 import boto3
+import logging
 # from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
+
+logging_level = logging.INFO
+logging.basicConfig(level=logging_level)
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
@@ -72,7 +76,7 @@ def build_escaped_arn(entity_arn):
 
     split_arn = re.split('/|:', entity_arn)
     escaped_arn = "arn:aws:sts::" + split_arn[4] + ":assumed-role\\/" + split_arn[6]
-    print escaped_arn
+    logging.debug(escaped_arn)
     return escaped_arn
 
 if __name__ == '__main__':

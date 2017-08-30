@@ -8,6 +8,8 @@ queried role and attaches the revised policy.
 
 import re
 import boto3
+import os
+from security_fairy_tools import Arn
 from botocore.exceptions import ProfileNotFound
 
 try:
@@ -29,7 +31,7 @@ def lambda_handler(event, context):
         dynamodb_table  = event.get('dynamodb_table', os.environ['dynamodb_table'])
 
         policy_object   = get_revised_policy(execution_id, dynamodb_table)
-        entity_name     = get_entity_name_from_arn(policy_object['entity_arn'])
+        entity_name     = Arn(policy_object['entity_arn']).get_entity_name()
 
         existing_policies = get_existing_managed_policies(entity_name)
         preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
@@ -44,9 +46,9 @@ def apply_revised_policy(policy_object):
 
     iam_client = SESSION.client('iam')
 
-    entity_arn = policy_object['entity_arn']
+    entity_arn = Arn(policy_object['entity_arn'])
     policy = policy_object['policy']
-    entity_name = get_entity_name_from_arn(entity_arn)
+    entity_name = entity_arn.get_entity_name()
 
     format_name = "{entity_name}_security_fairy_revised_policy".format(entity_name=entity_name)
 
@@ -145,10 +147,6 @@ def get_revised_policy(execution_id, dynamodb_table):
                         )
 
 
-def get_entity_name_from_arn(entity_arn):
-    """Parse entity name from ARN"""
-    entity_name = re.split('/|:', entity_arn)[6]
-    return entity_name
 
 
 if __name__ == '__main__':
@@ -161,7 +159,6 @@ if __name__ == '__main__':
         "execution_id": "31d595d8-d747-4187-b313-6d6fb988247f",
         "dynamodb_table": "security_fairy_dynamodb_table"
     }, {})
-    # print(get_entity_name_from_arn('get_entity_name_from_arn'))
     # existing_policies = ['arn:aws:iam::aws:policy/AmazonS3FullAccess', 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess', 'arn:aws:iam::aws:policy/AdministratorAccess']
     # dynamodb_table = 'security_fairy_dynamodb_table'
     # execution_id = '4bb5d1ad-17ed-43d7-a06b-59ead4a9cf00'
