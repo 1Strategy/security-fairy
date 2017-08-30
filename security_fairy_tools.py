@@ -15,7 +15,7 @@ class Arn:
         Amazon Resource Name entity.
         """
 
-        logging.basicConfig(level=logging_level)
+        logging.basicConfig(level=logging_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
         split_arn               = entity_arn.split(':')
         logging.debug(split_arn)
