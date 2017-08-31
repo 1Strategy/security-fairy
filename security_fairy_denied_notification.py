@@ -32,10 +32,18 @@ def lambda_handler(event, context):
 
     # loads contents of the Records key into variable (our actual cloudtrail log entries!)
     records = json.loads(gzfile.readlines()[0])['Records']
-    access_denied_records = []
+
+    access_denied_records = check_records_for_error_code(records)
+    # write_denied_actions_to_dynamodb(access_denied_records)
+    send_access_denied_notifications(access_denied_records, topic_arn)
+
+
+def check_records_for_error_code(records, error_codes = ['AccessDenied', 'AccessDeniedException','Client.UnauthorizedOperation']):
+
+    matched_error_records = []
 
     for record in records:
-        if record.get('errorCode', None) in ['AccessDenied', 'AccessDeniedException','Client.UnauthorizedOperation']:
+        if record.get('errorCode', None) in error_codes:
             logging.debug(record)
             extracted_information = {}
             arn             = Arn(record['userIdentity'].get('arn', None))
@@ -45,19 +53,36 @@ def lambda_handler(event, context):
             extracted_information['error_code']     = record['errorCode']
             extracted_information['denied_action']  = service_name + ':' + record['eventName']
 
-            if not extracted_information in access_denied_records:
+            if not extracted_information in matched_error_records:
                 logging.debug('extracted_information doesn\'t already exist in list of access denieds')
-                access_denied_records.append(extracted_information)
+                matched_error_records.append(extracted_information)
+    logging.debug(matched_error_records)
+    return matched_error_records
 
 
-
-    logging.debug(access_denied_records)
+def send_access_denied_notifications(access_denied_records, topic_arn):
 
     if access_denied_records:
         response = boto3.client('sns', region_name = 'us-east-1')\
                         .publish(   TopicArn=topic_arn,
                                     Message=json.dumps(access_denied_records),
                                     Subject='Automated AWS Notification - Access Denied')
+
+
+def write_denied_actions_to_dynamodb():
+    pass
+
+
+def is_access_denied_security_fairy_audited_role(role_arn):
+    #Consumes an role arn and examines its attached policies to see
+    #if they were created by security-fairy
+    role = Arn(role_arn)
+    role.get_entity_name()
+    #examines all attached policies and search for an attached policy with the
+    # following format:  *_security_fairy_revised_policy
+    # (see security_fairy_revised_policy_approve.py line 58)    
+    return False
+
 
 if __name__ == '__main__':
     EVENT = {
