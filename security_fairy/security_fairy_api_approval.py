@@ -10,6 +10,7 @@ from __future__ import print_function
 import string
 import json
 import boto3
+import os
 from requests.utils import unquote
 from botocore.exceptions import ProfileNotFound
 
