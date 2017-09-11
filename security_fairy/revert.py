@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from botocore.exceptions import ProfileNotFound
+from boto3.dynamodb.conditions import Key
 
 
 try:
@@ -12,10 +13,12 @@ try:
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
+
 def lambda_handler(event, context):
     pass
     # get
     # post_response
+
 
 def get_response():
     pass
@@ -34,27 +37,26 @@ def revert_role_managed_policies(role_arn):
 
 
 def associate_preexisting_policies(entity_arn):
-
     iam_client      = SESSION.client('iam')
     dynamodb_client = SESSION.client('dynamodb')
     # reach out to security_fairy_dynamodb_table and get 'existing_policies' field
 
-    #TODO ask alex
-    # response_item   = dynamodb_client.get_item( TableName='security_fairy_revised_policy'#os.environ['dynamodb_table'],
-    #                                             Key={
-    #                                                 "entity_arn": {
-    #                                                     "S": "{entity_arn}".format(entity_arn=entity_arn)
-    #                                                 }
-    #                                             })['Item']
-    # print(response_item)
+    response_item   = dynamodb_client.query(
+                          TableName='security_fairy_revised_policy',#os.environ['dynamodb_table'],
+                          IndexName='<SECONDARY_INDEX_HERE>',
+                          Select='ALL_ATTRIBUTES',
+                          KeyConditionExpression=Key("entity_arn").eq(entity_arn)
+                      )['Items']
+    print(response_item)
 
     # for each item in 'existing_policies' attach policy to 'role_arn'
-    # for policy in existing_policies:
-    #   attachment_response = iam_client.attach_role_policy(RoleName=entity_arn,
-    #                                                       PolicyArn=policy)
+    for policy in existing_policies:
+        attachment_response = iam_client.attach_role_policy(RoleName=entity_arn,
+                                                            PolicyArn=policy
+                                                            )
+
 
 def disassociate_security_fairy_policy(entity_arn):
-
     iam_client      = SESSION.client('iam')
     arn = Arn(entity_arn)
     account_number  = arn.get_account_number()
