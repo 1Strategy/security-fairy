@@ -46,6 +46,4 @@ def delete_revised_policy(dynamodb_table, execution_id):
 
 
 if __name__ == '__main__':
-    lambda_handler(
-        {}, {}
-    )
+    lambda_handler({}, {})
