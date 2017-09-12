@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import re
-from security_fairy_tools import Arn
+from tools import Arn
 
 logging.basicConfig(level=logging.INFO)
 
