@@ -11,8 +11,8 @@ import boto3
 import logging
 from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
-from security_fairy_tools import Arn
-from security_fairy_tools import IAMPolicy
+from tools import Arn
+from tools import IAMPolicy
 
 
 logging_level = logging.INFO
