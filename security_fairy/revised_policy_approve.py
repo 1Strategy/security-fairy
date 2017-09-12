@@ -6,9 +6,10 @@ queried role and attaches the revised policy.
 """
 
 
-import re
 import boto3
 import os
+import logging
+import re
 from security_fairy_tools import Arn
 from botocore.exceptions import ProfileNotFound
 
@@ -17,6 +18,7 @@ try:
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
+logging.basicConfig(level=logging.INFO)
 
 def lambda_handler(event, context):
     """ Executed by the Lambda service.
