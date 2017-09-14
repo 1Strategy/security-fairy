@@ -63,7 +63,12 @@ class Arn:
             self.entity_name    = entity[1]
 
     def is_role(self):
-        if self.entity_type == 'role':
+        if self.entity_type == 'role' or self.entity_type == 'assumed-role':
+            return True
+        return False
+
+    def is_user(self):
+        if self.entity_type == 'user':
             return True
         return False
 
@@ -79,7 +84,8 @@ class Arn:
 
     def convert_assumed_role_to_role(self):
         if not self.is_assumed_role():
-            logging.info('ARN is not assumed-role. No action taken')
+            logging.debug('ARN is not assumed-role. No action taken')
+            return
         self.full_arn = self.full_arn.replace(':sts:', ':iam:')
         self.full_arn = self.full_arn.replace(':assumed-role/',':role/')
         self.full_arn = self.full_arn.replace('/'+self.assuming_entity, '')

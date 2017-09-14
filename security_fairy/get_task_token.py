@@ -7,6 +7,7 @@ object for the next Lambda function.
 
 
 import boto3
+import logging
 from botocore.exceptions import ProfileNotFound
 
 try:
@@ -24,5 +25,6 @@ def lambda_handler(event, context):
     sfn_client = SESSION.client('stepfunctions')
     activity_task = sfn_client.get_activity_task(activityArn=event['activity_arn'])
     event['task_token'] = activity_task['taskToken']
+    logging.debug(event)
 
     return event

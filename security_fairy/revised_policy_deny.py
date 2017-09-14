@@ -3,10 +3,10 @@
 Discards the changes suggested by
 Security Fairy.
 """
-
-import json
-import os
 import boto3
+import json
+import logging
+import os
 from botocore.exceptions import ProfileNotFound
 
 
@@ -23,9 +23,9 @@ def lambda_handler(event, context):
     policy from the DynamoDB table.
     """
 
-    print event
+    logging.debug(event)
     event = json.loads(event['Cause'])
-    print event
+    logging.debug(event)
     execution_id = event['execution_id']
     dynamodb_table = os.environ['dynamodb_table']
 
@@ -46,6 +46,4 @@ def delete_revised_policy(dynamodb_table, execution_id):
 
 
 if __name__ == '__main__':
-    lambda_handler(
-        {}, {}
-    )
+    lambda_handler({}, {})

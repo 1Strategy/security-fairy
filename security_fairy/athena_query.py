@@ -1,5 +1,4 @@
 """Athena Query
-
 Submits the appropriate Security Fairy
 query to Athena.
 """
@@ -8,23 +7,24 @@ query to Athena.
 import re
 import boto3
 import logging
-# from botocore.exceptions import ClientError
+from aws_session_manager import AWS_Session
 from botocore.exceptions import ProfileNotFound
 
 logging_level = logging.INFO
 logging.basicConfig(level=logging_level)
 
-try:
-    SESSION = boto3.session.Session(profile_name='training',
-                                    region_name='us-east-1'
-                                   )
-except ProfileNotFound as pnf:
-    SESSION = boto3.session.Session()
+# try:
+#     SESSION = boto3.session.Session(profile_name='training',
+#                                     region_name='us-east-1')
+# except ProfileNotFound as pnf:
+#     SESSION = boto3.session.Session()
 
+SESSION = AWS_Session()
 
 def lambda_handler(event, context):
+    global SESSION
+    SESSION = SESSION.get_session()
     """ Executed by the Lambda service.
-
     Submits the query for execution and returns
     the Execution ID for use by subsequent
     Lambda functions.

@@ -5,13 +5,13 @@ Sends an email to the user with an approval url.
 
 
 import boto3
+import logging
 from requests.utils import quote
 from botocore.exceptions import ProfileNotFound
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
-                                    region_name='us-east-1'
-                                   )
+                                    region_name='us-east-1')
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
@@ -38,13 +38,13 @@ def lambda_handler(event, context):
     # Build message
     message = 'Approve changes from Security Fairy here: {approval_url}'\
                 .format(approval_url=approval_url)
-    print message
+    logging.debug(message)
     response = sns_client.publish(
         TopicArn=sns_arn,
         Message="{message}".format(message=message),
-        Subject='Security Fairy Permissions Request'
-        )
-    print response
+        Subject='Security Fairy Permissions Request')
+
+    logging.debug(response)
 
 if __name__ == '__main__':
     EVENT = {

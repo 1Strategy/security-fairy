@@ -14,7 +14,7 @@ import string
 import boto3
 
 from botocore.exceptions import ProfileNotFound
-from security_fairy_tools import Arn
+from tools import Arn
 
 try:
     SESSION = boto3.session.Session(profile_name='training')
