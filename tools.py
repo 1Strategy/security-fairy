@@ -159,7 +159,9 @@ class IAMPolicy:
         if self.service_actions.get(service) is None:
             self.service_actions[service] = []
 
-        self.service_actions[service].append(action)
+        if not action in self.service_actions[service]:
+            self.service_actions[service].append(action)
+            logging.debug("Action added: {service}:{action}".format(service=service, action=action))
 
     def __get_service_alias__(self, service):
         service_aliases = {
