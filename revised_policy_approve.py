@@ -10,11 +10,11 @@ import boto3
 import os
 import logging
 import re
-from security_fairy_tools import Arn
+from tools import Arn
 from botocore.exceptions import ProfileNotFound
 
 try:
-    SESSION = boto3.session.Session(profile_name='training')
+    SESSION = boto3.session.Session(profile_name='training', region_name='us-east-1')
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
@@ -27,13 +27,16 @@ def lambda_handler(event, context):
     queried role and attaches the Security Fairy
     revised policy.
     """
-
     try:
         execution_id    = event['execution_id']
-        dynamodb_table  = event.get('dynamodb_table', os.environ['dynamodb_table'])
+        logging.debug(execution_id)
+        dynamodb_table  = event.get('dynamodb_table')#, os.environ['dynamodb_table'])
+        logging.debug(dynamodb_table)
 
         policy_object   = get_revised_policy(execution_id, dynamodb_table)
+        logging.debug(policy_object)
         entity_name     = Arn(policy_object['entity_arn']).get_entity_name()
+        logging.debug(entity_name)
 
         existing_policies = get_existing_managed_policies(entity_name)
         preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
@@ -41,7 +44,8 @@ def lambda_handler(event, context):
         apply_revised_policy(policy_object)
 
     except Exception as error:
-        logging.debug(error)
+        logging.info("There was an error: ")
+        logging.info(error)
 
 def apply_revised_policy(policy_object):
     """Attach Security Fairy's suggested policy"""
@@ -52,16 +56,12 @@ def apply_revised_policy(policy_object):
     policy = policy_object['policy']
     entity_name = entity_arn.get_entity_name()
 
-    format_name = "{entity_name}_security_fairy_revised_policy".format(entity_name=entity_name)
+    policy_name = "{entity_name}_security_fairy_revised_policy".format(entity_name=entity_name)
 
     logging.info("Attaching: ")
-    logging.info(format_name)
+    logging.info(policy_name)
 
-    iam_client.put_role_policy( RoleName=entity_name,
-                                PolicyName=format_name,
-                                PolicyDocument=policy)
-
-    iam_client          = session.client('iam')
+    iam_client          = SESSION.client('iam')
     creation_response   = iam_client.create_policy( PolicyName=policy_name,
                                                     Path='/security-fairy/',
                                                     PolicyDocument=policy,
@@ -102,8 +102,10 @@ def get_existing_managed_policies(entity_name):
 
 
 def preserve_existing_policies(execution_id, existing_policies, dynamodb_table):
-
-    dynamodb_client = session.client('dynamodb')
+    logging.info(execution_id)
+    logging.info(existing_policies)
+    logging.info(dynamodb_table)
+    dynamodb_client = SESSION.client('dynamodb')
     dynamodb_client.update_item(TableName=dynamodb_table,
                                 Key={
                                     "execution_id": {
@@ -143,10 +145,9 @@ def get_revised_policy(execution_id, dynamodb_table):
         return return_response
 
     except Exception as e:
-        logging.debug(e)
+        logging.info(e)
         raise ValueError('Execution Id doesn\'t exist or has expired. \
-                          Security-fairy must be rerun.'
-                        )
+                          Security-fairy must be rerun.')
 
 
 
@@ -158,9 +159,10 @@ if __name__ == '__main__':
     # preserve_existing_policies(execution_id, existing_policies, dynamodb_table)
 
     lambda_handler({
-        "execution_id": "31d595d8-d747-4187-b313-6d6fb988247f",
-        "dynamodb_table": "security_fairy_dynamodb_table"
-    }, {})
+                        "execution_id": "ed3dda30-b1d0-4191-ab88-ce2718b89485",
+                        "dynamodb_table": "security_fairy_dynamodb_table"
+                    }
+                    , {})
     # existing_policies = ['arn:aws:iam::aws:policy/AmazonS3FullAccess', 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess', 'arn:aws:iam::aws:policy/AdministratorAccess']
     # dynamodb_table = 'security_fairy_dynamodb_table'
     # execution_id = '4bb5d1ad-17ed-43d7-a06b-59ead4a9cf00'
