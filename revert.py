@@ -22,8 +22,8 @@ def lambda_handler(event, context):
     if method == 'GET':
         pass
     if method == 'POST':
-        entity_to_revert  = json.loads(event['body'].get('entity_arn'), {}))
-        entity_arn = Arn(entity_to_revert)
+        entity_to_revert  = json.loads(event['body'].get('entity_arn', {}))
+        entity_arn = Arn(entity_to_revert).get_full_arn()
         post_response(entity_arn)
 
     api_return_payload = {
@@ -37,7 +37,13 @@ def lambda_handler(event, context):
     return api_return_payload
 
 def get_response():
-    pass
+    return {
+        'statusCode': 500,
+        'headers':{
+            'Content-Type':'text/html'
+        },
+        'body':'Security Fairy Error - Get method is fubar'
+    }
 
 
 def post_response(entity_arn):
@@ -87,10 +93,10 @@ def disassociate_security_fairy_policy(entity_arn):
     account_number  = arn.get_account_number()
     entity_name     = arn.get_entity_name()
 
-    policy_arn      =  'arn:aws:iam::{account_number}:policy/security-fairy/{entity_name}_security_fairy_revised_policy'\
+    policy_arn      =  'arn:aws:iam::{account_number}:policy/security-fairy/{entity_name}-security-fairy-revised-policy'\
                             .format(account_number=account_number,
                                     entity_name=entity_name
-                                    )#.replace('_','-')
+                                    ).replace('_','-')
     logging.debug(policy_arn)
 
     detach_policy(entity_name, policy_arn)
