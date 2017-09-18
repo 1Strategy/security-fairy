@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+from tools import Arn
 from botocore.exceptions import ProfileNotFound
 from boto3.dynamodb.conditions import Key
 
@@ -15,17 +16,41 @@ except ProfileNotFound as pnf:
 
 
 def lambda_handler(event, context):
-    pass
-    # get
-    # post_response
 
+    method      = event['httpMethod']
+
+    if method == 'GET':
+        pass
+    if method == 'POST':
+        entity_to_revert  = json.loads(event['body'].get('entity_arn'), {}))
+        entity_arn = Arn(entity_to_revert)
+        post_response(entity_arn)
+
+    api_return_payload = {
+        'statusCode': 405,
+        'headers':{
+            'Content-Type':'text/html'
+        },
+        'body':'Security Fairy Error - HTTP Method or Input not supported.'
+    }
+
+    return api_return_payload
 
 def get_response():
     pass
 
 
-def post_response():
-    pass
+def post_response(entity_arn):
+    try:
+        revert_role_managed_policies(entity_arn)
+    except Exception:
+        return {
+                    'statusCode': 405,
+                    'headers':{
+                    'Content-Type':'text/html'
+                    },
+                    'body':'Security Fairy Error - Role wasn\'t reverted properly.'
+                }
 
 
 def revert_role_managed_policies(role_arn):
@@ -43,17 +68,17 @@ def associate_preexisting_policies(entity_arn):
 
     response_item   = dynamodb_client.query(
                           TableName='security_fairy_revised_policy',#os.environ['dynamodb_table'],
-                          IndexName='<SECONDARY_INDEX_HERE>',
+                          IndexName='entity_arn',
                           Select='ALL_ATTRIBUTES',
                           KeyConditionExpression=Key("entity_arn").eq(entity_arn)
                       )['Items']
-    print(response_item)
+    logging.debug(response_item)
 
     # for each item in 'existing_policies' attach policy to 'role_arn'
-    for policy in existing_policies:
-        attachment_response = iam_client.attach_role_policy(RoleName=entity_arn,
-                                                            PolicyArn=policy
-                                                            )
+    # for policy in existing_policies:
+    #     attachment_response = iam_client.attach_role_policy(RoleName=entity_arn,
+    #                                                         PolicyArn=policy
+    #                                                         )
 
 
 def disassociate_security_fairy_policy(entity_arn):
@@ -65,7 +90,7 @@ def disassociate_security_fairy_policy(entity_arn):
     policy_arn      =  'arn:aws:iam::{account_number}:policy/security-fairy/{entity_name}_security_fairy_revised_policy'\
                             .format(account_number=account_number,
                                     entity_name=entity_name
-                                    ).replace('_','-')
+                                    )#.replace('_','-')
     logging.debug(policy_arn)
 
     detach_policy(entity_name, policy_arn)
@@ -92,6 +117,7 @@ def delete_policy(policy_arn):
 
 
 if __name__ == '__main__':
-    entity_arn = 'arn:aws:iam::281782457076:role/1s_tear_down_role'
+    # entity_arn = 'arn:aws:iam::281782457076:role/1s_tear_down_role'
     # disassociate_security_fairy_policy(entity_arn)
-    delete_policy('arn:aws:iam::281782457076:policy/security-fairy/1s-tear-down-role-security-fairy-revised-policy')
+    # delete_policy('arn:aws:iam::281782457076:policy/security-fairy/1s-tear-down-role-security-fairy-revised-policy')
+    associate_preexisting_policies("arn:aws:iam::281782457076:role/1s_tear_down_role")
