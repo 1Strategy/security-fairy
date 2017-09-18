@@ -56,7 +56,9 @@ def apply_revised_policy(policy_object):
     policy = policy_object['policy']
     entity_name = entity_arn.get_entity_name()
 
-    policy_name = "{entity_name}_security_fairy_revised_policy".format(entity_name=entity_name)
+    policy_name = "{entity_name}_security_fairy_revised_policy"\
+                        .format(entity_name=entity_name) \
+                            .replace("_","-")
 
     logging.info("Attaching: ")
     logging.info(policy_name)
