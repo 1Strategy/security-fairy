@@ -17,7 +17,7 @@ except ProfileNotFound as pnf:
 
 def lambda_handler(event, context):
 
-    method      = event['httpMethod']
+    method = event['httpMethod']
 
     if method == 'GET':
         pass
