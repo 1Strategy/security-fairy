@@ -219,18 +219,17 @@ def api_website(event, domain):
         "body": string.Template(body).safe_substitute(replace_dict)
     }
 
-
 if __name__ == '__main__':
     EVENT = {
-        u'body': u'{"task_token":"AAAAKgAAAAIAAAAAAAAAAbwck0ZXLox0l5UCsjE3iQN3iBJNAu9ZWh/ElSrNKHdVP90ZxgrPZvFQZMnl+dcD4J9VdwieXvx2s6VBpQ1AsIrJLYM7y9D1bDRvrct34LA4YldibA7gw3dz5YmvScrCiLX8DLPT5BiKkpKtwN5pVXqlC0fZcSQ4Z2ZdSvAN/awy6S678p5QyxsJlqe3pQpbIZfmQ4XjboqpLMIWSMDkYajtBuxMgtfyX879s5QHzCZ9d0B29WI3FV0PS07xMYrqn+2Nu/2l64JvKMMNBknJZiM2c92AQFZMFvOvMCHnxbtLqZjZpWTaW5Z3O0Cv5B91l6T7bZvk6Dp7QZ6fAdYlQw8S/YT0Vz6z/sMPDf3bxPfGJ9b4cjVHbLX0nK4BEvlAW/OEXJGGYG9X2V/gUoRMs/RwEenzvxi5raZPsHlCqOZzmuszC1H4duNQBaRjF2vzOY60wyOoP7/shrdfPvGKh9LMMUi/ir2y9W8hbCb6R1MZERE9yOIUlK+c5NHZf64JnRvNG2tUF4efOjVIbZfLrayDEAgLqeOtlXSy7yOLxSjdmqcVKXmD2AdnLg2yi/HYyyUc3fQPZES6nPOMpuLz27E=","execution_id":"9487c326-23fc-46d6-a2c2-69b6342b5162"}',
+        u'body': u'{"task_token":"AAAAKgAAAAIAAAAAAAAAAeBS1qBvUAgyOizrFb5NdzMlMlS%2BqIKnNmqXDJlrEXcIrwwRvxrKGV65Rs1ar6zzx0tVhh%2BEzjhn2FKSTpsusDO3S6CUZU3LVfwhOcluxAJDlTPSujG4FYvgQxUI%2FnzChKRAVIIGKZywPPD6VpkBkKp19RuN6Bq6g0Krx2ASzfFbvS7mK%2F%2FMxfyn52MrIXAEy75xYnBSR5wtt4%2BuBUXWIoGsoQ8haKfsB2R3mnxykbDUNmM7TtnWULw4Z9V3LOfhwp0ZxzfzNXWpRMvY4Ifwu6VSHRgoRl%2FzVpcDXr3Eeeb4fLic30B56cWjI5qxpALfswEHyP%2FWPyXkpyAHmQUbxlygRzpZUmt84%2F7Ds%2FXr2GpRcrp7Hzpe2GiMymHgXYp8wgSzRZAV5R1fYaRPgSnGETUs37%2BGC8eIfgC8ER6JuXhy1xv6ugvO3vZ0rNd9FdylHzrQ4CtAM0yMagmEfOfibCQxjAFswIBd1E790dhe1I5eD9X8%2BTMt7CzYdSN0MOky3dn6uhIfNUxU5cs4jGg%2FzfrsEBW2fFmmxQ68phCL3AXgxoGO4LIs2mkLJzM%2BtbMmCA%3D%3D","execution_id":"d285e04c-21d9-4468-93d2-ba7b173c2292"}',
         u'resource': u'/{approval}',
         u'requestContext': {
             u'resourceId': u'ktk3jq',
             u'apiId': u'ezwzmmh526',
             u'resourcePath': u'/{approval}',
-            u'httpMethod': u'POST',
+            u'httpMethod': u'GET',
             u'requestId': u'2938ad50-50a7-11e7-bff1-93579d44e732',
-            u'path': u'/Prod/deny',
+            u'path': u'/Prod/approve',
             u'accountId': u'281782457076',
             u'identity': {
                 u'apiKey': u'',
@@ -249,7 +248,7 @@ if __name__ == '__main__':
             u'stage': u'Prod'
         },
         u'queryStringParameters': None,
-        u'httpMethod': u'POST',
+        u'httpMethod': u'GET',
         u'pathParameters': {
             u'approval': u'deny'
         },
