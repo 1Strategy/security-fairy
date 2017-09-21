@@ -3,7 +3,7 @@ import boto3
 
 # Create AWS session
 try:
-    session = boto3.session.Session(profile_name='training')
+    session = boto3.session.Session(profile_name='training', region_name='us-east-1')
 except Exception as e:
     session = boto3.session.Session()
 
@@ -14,7 +14,7 @@ account_number = session.client('sts').get_caller_identity()
 
 
 # Connect to Athena
-athena = session.client('athena', region_name='us-west-2')
+athena = session.client('athena')
 
 
 # Query Configurations
