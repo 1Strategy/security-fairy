@@ -11,7 +11,7 @@ cloudtrail_bucket = "1strategy-training-traillogs"
 account_number = session.client('sts').get_caller_identity()
 
 
-
+# TODO Add the aws_logs table via the GLUE catalogue manager
 
 # Connect to Athena
 athena = session.client('athena')
