@@ -223,8 +223,6 @@ Resources:
       KeySchema:
         - AttributeName: execution_id
           KeyType: HASH
-        - AttributeName: entity_arn
-          KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
