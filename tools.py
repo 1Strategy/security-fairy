@@ -41,7 +41,6 @@ class Arn:
         entity = split_arn[5].split('/')
 
         self.logger.debug('Entity: {}'.format(entity))
-        # self.logger.debug(entity)
 
         if entity[0] == 'role' or entity[0] == 'policy':
             self.logger.debug("This entity is a {entity}".format(entity=entity[0]))
