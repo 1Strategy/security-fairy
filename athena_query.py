@@ -7,7 +7,6 @@ query to Athena.
 import re
 import boto3
 import logging
-from aws_session_manager import AWS_Session
 from botocore.exceptions import ProfileNotFound
 
 logging_level = logging.INFO
@@ -19,11 +18,8 @@ try:
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
-# SESSION = AWS_Session()
 
 def lambda_handler(event, context):
-    # global SESSION
-    # SESSION = SESSION.get_session()
     """ Executed by the Lambda service.
     Submits the query for execution and returns
     the Execution ID for use by subsequent
