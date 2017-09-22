@@ -4,10 +4,11 @@ import logging
 import os
 import re
 from tools import Arn
+from setup_logger import create_logger
 from botocore.exceptions import ProfileNotFound
 from boto3.dynamodb.conditions import Key
 
-logging.basicConfig(level=logging.INFO)
+logger = create_logger(name = __name__, logging_level=logging.INFO)
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
@@ -21,12 +22,13 @@ def lambda_handler(event, context):
     method = event['httpMethod']
 
     if method == 'GET':
-        logging.info('Request was an HTTP GET Request')
+        logger.info('Request was an HTTP GET Request')
         return get_response()
 
     if method == 'POST':
-        logging.info('Request was an HTTP POST Request')
+        logger.info('Request was an HTTP POST Request')
         posted_arn = json.loads(event['body'])['entity_arn']
+        logger.info('Body: {}'.format(posted_arn))
         entity_arn = Arn(posted_arn)
         return post_response(entity_arn)
 
@@ -46,7 +48,7 @@ def get_all_iam_audited_entities():
                             'entity_arn',
                             'existing_policies'
                         ])['Items']
-    logging.info(response_item)
+    logger.info(response_item)
     return response_item
 
 
@@ -55,7 +57,7 @@ def post_response(entity_arn):
         revert_role_managed_policies(entity_arn)
     except Exception as e:
         # Generic "catch-all exception"
-        logging.debug(e)
+        logger.info(e)
         return api_response(body='Error - Role wasn\'t reverted properly.')
 
     return api_response(statusCode=200, body='Success: The IAM Role has had it\'s pre-security fairy permissions established')
@@ -95,9 +97,9 @@ def get_preexisting_policies(entity_arn):
                         }
                         )['Items'][0]
 
-    logging.info(response_item)
+    logger.info(response_item)
     existing_policies = response_item['existing_policies']['SS']
-    logging.info(existing_policies)
+    logger.info(existing_policies)
 
     return existing_policies
 
@@ -112,7 +114,7 @@ def associate_preexisting_policies(entity_arn):
 
     # for each item in 'existing_policies' attach policy to 'role_arn'
     for policy in existing_policies:
-        logging.info(policy)
+        logger.info(policy)
         attachment_response = iam_client.attach_role_policy(RoleName=role_name,
                                                             PolicyArn=policy)
 
@@ -127,7 +129,7 @@ def disassociate_security_fairy_policy(entity_arn):
                             .format(account_number=account_number,
                                     entity_name=entity_name)\
                                         .replace('_','-')
-    logging.debug(policy_arn)
+    logger.info(policy_arn)
 
     detach_policy(entity_name, policy_arn)
     delete_policy(policy_arn)
@@ -137,7 +139,7 @@ def detach_policy(entity_name, policy_arn):
     try:
         iam_client.detach_role_policy(RoleName=entity_name, PolicyArn=policy_arn)
     except Exception as error:
-        loggin.debug(error)
+        loggin.info(error)
 
 
 def delete_policy(policy_arn):
@@ -162,7 +164,7 @@ def api_response(statusCode=500, headers={'Content-Type':'text/html'}, body='Int
                 'body'      : body
             }
 
-    logging.debug(return_value)
+    logger.info(return_value)
     return return_value
 
 
@@ -183,4 +185,6 @@ if __name__ == '__main__':
     # delete_policy('arn:aws:iam::281782457076:policy/security-fairy/1s-tear-down-role-security-fairy-revised-policy')
     # associate_preexisting_policies("arn:aws:iam::281782457076:role/1s_tear_down_role")
     # get_all_iam_audited_entities()
-    print(nosql_to_list_of_dicts(get_all_iam_audited_entities()))
+    # print(nosql_to_list_of_dicts(get_all_iam_audited_entities()))
+    # event = {"resource":"/revert","path":"/revert","httpMethod":"POST","headers":None,"queryStringParameters":None,"pathParameters":None,"stageVariables":None,"requestContext":{"path":"/revert","accountId":"281782457076","resourceId":"l4irb8","stage":"test-invoke-stage","requestId":"test-invoke-request","identity":{"cognitoIdentityPoolId":None,"accountId":"281782457076","cognitoIdentityId":None,"caller":"AROAJFMSEYJPIQQGLKKO4:justiniravani","apiKey":"test-invoke-api-key","sourceIp":"test-invoke-source-ip","accessKey":"ASIAIGOR7BSSZ2T4WYUA","cognitoAuthenticationType":None,"cognitoAuthenticationProvider":None,"userArn":"arn:aws:sts::281782457076:assumed-role/1S-Admins/justiniravani","userAgent":"Apache-HttpClient/4.5.x (Java/1.8.0_131)","user":"AROAJFMSEYJPIQQGLKKO4:justiniravani"},"resourcePath":"/revert","httpMethod":"POST","apiId":"sloh70a4cj"},"body":"{\"entity_arn\":\"arn:aws:iam::281782457076:role/1s_tear_down_role\"}","isBase64Encoded":False}
+    # lambda_handler(event, {})
