@@ -52,12 +52,15 @@ class Arn:
 
         elif entity[0] =='assumed-role':
                 self.logger.debug("This entity is an assumed-role")
-                self.entity_type    = entity[0]
+                self.entity_type     = entity[0]
                 self.logger.debug(self.entity_type)
-                self.entity_name    = entity[1]
+                self.entity_name     = entity[1]
                 self.logger.debug(self.entity_name)
-                self.assuming_entity = entity[2]
-                self.logger.debug(self.assuming_entity)
+                if entity[2]:
+                    self.assuming_entity = entity[2]
+                    self.logger.debug(self.assuming_entity)
+                else:
+                    self.logger.warn("""An assumed-role ARN should contain the assuming entity. Please make the entire ARN is being passed correctly.""")
         else:
             self.entity_type    = entity[0]
             self.entity_name    = entity[1]
