@@ -20,7 +20,7 @@ except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
 
-logger = create_logger(name=__name__, logging_level=logging.INFO)
+logger = create_logger(name='revised_policy_approve.py', logging_level=logging.INFO)
 
 
 def lambda_handler(event, context):
