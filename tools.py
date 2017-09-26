@@ -1,5 +1,6 @@
 import logging
 import json
+from setup_logger import create_logger
 
 class InvalidArn(Exception):
     pass
@@ -8,23 +9,21 @@ class InvalidStatementAction(Exception):
     pass
 
 class Arn:
-
-    def __init__(self, entity_arn, logging_level = logging.DEBUG):
+    def __init__(self, entity_arn, logging_level = logging.INFO):
         """
         This class consumes a string and validates that it is a valid
         Amazon Resource Name entity.
         """
-
-        logging.basicConfig(level=logging_level, format='%(asctime)s - %(levelname)s - %(message)s')
-
-        split_arn               = entity_arn.split(':')
-        logging.debug(split_arn)
+        split_arn = entity_arn.split(':')
+        self.logger = create_logger(name=__name__, logging_level=logging_level)
+        self.logger.debug(split_arn)
 
         if len(split_arn) != 6:
             # Throw an error if the string and resultant list don't contain
             # the 6 sections colon delimited
             # e.g. arn:aws:iam::123456789012:role/service-role/StatesExecutionRole-us-west-2
-            raise InvalidArn("The given arn is invalid: {entity_arn}".format(entity_arn=entity_arn))
+            raise InvalidArn("The given arn is invalid: {entity_arn}"\
+                    .format(entity_arn=entity_arn))
 
         self.full_arn           = entity_arn
         self.entity_name        = ''
@@ -36,28 +35,31 @@ class Arn:
         self.service            = split_arn[2]
         self.extract_entity(split_arn)
 
-    def extract_entity(self, split_arn):
-        entity              = split_arn[5].split('/')
+        self.logger.info('AWSEntity correctly instantiated: {}'.format(self.get_full_arn()))
 
-        logging.debug('Entity:')
-        logging.debug(entity)
+    def extract_entity(self, split_arn):
+        entity = split_arn[5].split('/')
+
+        self.logger.debug('Entity: {}'.format(entity))
 
         if entity[0] == 'role' or entity[0] == 'policy':
-            logging.debug("this entity is a {entity}".format(entity=entity[0]))
+            self.logger.debug("This entity is a {entity}".format(entity=entity[0]))
             self.entity_type    = entity[0]
             self.entity_name    = entity[len(entity)-1]
             self.path           = '' if entity[len(entity)-1]==entity[1] else entity[1]
-            logging.debug('Path:')
-            logging.debug(self.path)
+            self.logger.debug('Path: {}'.format(self.path))
 
         elif entity[0] =='assumed-role':
-                logging.debug("this entity is an assumed-role")
-                self.entity_type    = entity[0]
-                logging.debug(self.entity_type)
-                self.entity_name    = entity[1]
-                logging.debug(self.entity_name)
-                self.assuming_entity = entity[2]
-                logging.debug(self.assuming_entity)
+                self.logger.debug("This entity is an assumed-role")
+                self.entity_type     = entity[0]
+                self.logger.debug(self.entity_type)
+                self.entity_name     = entity[1]
+                self.logger.debug(self.entity_name)
+                if entity[2]:
+                    self.assuming_entity = entity[2]
+                    self.logger.debug(self.assuming_entity)
+                else:
+                    self.logger.warn("""An assumed-role ARN should contain the assuming entity. Please make the entire ARN is being passed correctly.""")
         else:
             self.entity_type    = entity[0]
             self.entity_name    = entity[1]
@@ -84,15 +86,14 @@ class Arn:
 
     def convert_assumed_role_to_role(self):
         if not self.is_assumed_role():
-            logging.debug('ARN is not assumed-role. No action taken')
+            self.logger.debug('ARN is not assumed-role. No action taken')
             return
         self.full_arn = self.full_arn.replace(':sts:', ':iam:')
         self.full_arn = self.full_arn.replace(':assumed-role/',':role/')
         self.full_arn = self.full_arn.replace('/'+self.assuming_entity, '')
-        logging.info(self.full_arn)
+        self.logger.info(self.full_arn)
 
-        logging.info('assumed-role converted to role')
-
+        self.logger.info('assumed-role converted to role')
 
     def __rebuild_full_arn__(self):
         pass
@@ -117,6 +118,10 @@ class Arn:
 
     def get_account_number(self):
         return self.account_number
+
+class AWSEntity(Arn):
+    def __init__(self, entity_arn, logging_level = logging.INFO):
+         Arn.__init__(self, entity_arn, logging_level = logging_level)
 
 class IAMPolicy:
 

@@ -31,6 +31,13 @@ class NoResults(Exception):
     """No Results Exception Class"""
     pass
 
+class QueryFailed(Exception):
+    """No Results Exception Class"""
+    pass
+
+class QueryStillRunning(Exception):
+    """No Results Exception Class"""
+    pass
 
 def lambda_handler(event, context):
     """ Executed by the Lambda service.
@@ -45,7 +52,7 @@ def lambda_handler(event, context):
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
     raw_query_results = get_query_results(query_execution_id)
-    aws_entity = get_entity_arn_v2(raw_query_results)
+    aws_entity = get_entity_arn(raw_query_results)
 
     service_level_actions = get_permissions_from_query_v2(raw_query_results)
 
@@ -73,10 +80,10 @@ def get_query_results(query_execution_id):
 
 
     if query_state in ['FAILED', 'CANCELLED']:
-        raise RuntimeError("Query failed to execute")
+        raise QueryFailed("Query failed to execute")
 
     if query_state in ['QUEUED', 'RUNNING']:
-        raise Exception("Query still running")
+        raise QueryStillRunning("Query still running")
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
@@ -117,8 +124,8 @@ def get_existing_entity_policies_v2(role_name):
     Retrieve existing managed policies for the queried role
     """
     iam_client = SESSION.client('iam')
-    logging.debug("role_name")
-    logging.debug(role_name)
+    logging.debug("role_name: {}".format(role_name))
+
     policies          = []
     attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)
     existing_policies = attached_policies['AttachedPolicies']
@@ -132,22 +139,40 @@ def get_existing_entity_policies_v2(role_name):
 def write_policies_to_dynamodb(execution_id, policy, entity_arn, dynamodb_table):
     """Write policies to DynamoDB table"""
     dynamodb_client = SESSION.client('dynamodb')
+    dynamodb_item_to_be_written = {}
+    existing_item = existing_dynamodb_entry(entity_arn, dynamodb_table)
+
+    if existing_item:
+        dynamodb_item_to_be_written = existing_item[0]
+        existing_execution_id = dynamodb_item_to_be_written['execution_id']['S']
+        delete_execution(existing_execution_id, dynamodb_table)
+        dynamodb_item_to_be_written['new_policy']   = { "S": policy }
+        dynamodb_item_to_be_written['execution_id'] = { "S": execution_id }
+    else:
+        dynamodb_item_to_be_written = { "execution_id": { "S": execution_id },
+                                        "new_policy"  : { "S": policy       },
+                                        "entity_arn"  : { "S": entity_arn   }}
+    logging.debug("Updated dynamodb_item: {}".format(dynamodb_item_to_be_written))
     dynamodb_client.put_item(TableName=dynamodb_table,
-                             Item={
-                                 "execution_id": {
-                                     "S": execution_id
-                                 },
-                                 "new_policy":{
-                                     "S": policy
-                                 },
-                                 "entity_arn": {
-                                     "S": entity_arn
-                                 }
-                             }
-                            )
+                             Item=dynamodb_item_to_be_written)
 
 
-def get_entity_arn_v2(result_set):
+def existing_dynamodb_entry(entity_arn, dynamodb_table):
+    dynamodb_client = SESSION.client('dynamodb')
+    response = dynamodb_client.scan(TableName=dynamodb_table,
+                                    # IndexName='entity_arn',
+                                    ScanFilter={ 'entity_arn': {'AttributeValueList': [{ 'S': entity_arn }],
+                                                                'ComparisonOperator': 'EQ'}})
+    return response.get('Items')
+
+
+def delete_execution(execution_id, dynamodb_table):
+    dynamodb_client = SESSION.client('dynamodb')
+    response = dynamodb_client.delete_item( TableName=dynamodb_table,
+                                            Key={ 'execution_id': { 'S': execution_id }})
+
+
+def get_entity_arn(result_set):
     entity_arn = result_set[0][0]['VarCharValue']
     logging.debug(entity_arn)
     arn = Arn(entity_arn)
@@ -156,10 +181,10 @@ def get_entity_arn_v2(result_set):
 
 
 if __name__ == '__main__':
-
-    lambda_handler(
-        {
-            "execution_id": "ed3dda30-b1d0-4191-ab88-ce2718b89485"
-        },
-        {}
-    )
+    existing_execution_id_for_role('arn:aws:iam::281782457076:role/1s_tear_down_role')
+    # lambda_handler(
+    #     {
+    #         "execution_id": "ed3dda30-b1d0-4191-ab88-ce2718b89485"
+    #     },
+    #     {}
+    # )

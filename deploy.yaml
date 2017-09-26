@@ -47,6 +47,33 @@ Resources:
             Path: /start
             Method: POST
 
+  SecurityFairyRevertApiEndpoint:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_api_revert'
+      CodeUri: .
+      Description: ''
+      Handler: revert.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AdministratorAccess
+      Runtime: python2.7
+      Timeout: 30
+      # Environment:
+      #   Variables:
+      #     state_machine: !Ref SecurityFairyStateMachine
+      Events:
+        GetApi:
+          Type: Api
+          Properties:
+            Path: /revert
+            Method: GET
+        PostApi:
+          Type: Api
+          Properties:
+            Path: /revert
+            Method: POST
+
   SecurityFairyVariableInjection:
     Type: AWS::Serverless::Function
     Properties:
@@ -155,7 +182,10 @@ Resources:
       - AWSStepFunctionsFullAccess
       Runtime: python2.7
       Timeout: 30
-
+      Environment:
+        Variables:
+          dynamodb_table: !Ref SecurityFairyDynamoDB
+          
   SecurityFairyDenyPolicy:
     Type: AWS::Serverless::Function
     Properties:
@@ -186,33 +216,31 @@ Resources:
       - AWSStepFunctionsFullAccess
 
   SecurityFairyDynamoDB:
-    Type: "AWS::DynamoDB::Table"
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       AttributeDefinitions:
-        -
-          AttributeName: "execution_id"
-          AttributeType: "S"
-
+        - AttributeName: execution_id
+          AttributeType: S
+        - AttributeName: entity_arn
+          AttributeType: S
       KeySchema:
-        -
-          AttributeName: "execution_id"
-          KeyType: "HASH"
-
+        - AttributeName: execution_id
+          KeyType: HASH
       ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
-
-      IndexName: entity_arn
-      KeySchema:
-        - AttributeName: "entity_arn"
-          KeyType: "HASH"
-      Projection:
-        NonKeyAttributes:
-          - entity_arn
-        ProjectionType: INCLUDE
-      ProvisionedThroughput:
-        ReadCapacityUnits: "5"
-        WriteCapacityUnits: "5"
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - IndexName: entity_arn
+          KeySchema:
+            - AttributeName: entity_arn
+              KeyType: HASH
+          Projection:
+            NonKeyAttributes:
+              - entity_arn
+            ProjectionType: INCLUDE
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
       TableName: "security_fairy_dynamodb_table"
 
   SecurityFairySNSTopic:

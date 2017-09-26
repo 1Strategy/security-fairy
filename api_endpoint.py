@@ -17,7 +17,7 @@ from botocore.exceptions import ProfileNotFound
 from tools import Arn
 
 try:
-    SESSION = boto3.session.Session(profile_name='training')
+    SESSION = boto3.session.Session(profile_name='training', region_name='us-east-1')
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
