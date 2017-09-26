@@ -41,13 +41,13 @@ def lambda_handler(event, context):
     # Build message
     message = 'Approve changes from Security Fairy here: {approval_url}'\
                 .format(approval_url=approval_url)
-    logger..debug(message)
+    logger.debug(message)
     response = sns_client.publish(
         TopicArn=sns_arn,
         Message="{message}".format(message=message),
         Subject='Security Fairy Permissions Request')
 
-    logger..debug(response)
+    logger.debug(response)
 
 if __name__ == '__main__':
     EVENT = {
