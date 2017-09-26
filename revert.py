@@ -3,8 +3,7 @@ import json
 import logging
 import os
 import re
-from tools import Arn
-from tools import AWSEntity
+from aws_entity import AWSEntity
 from setup_logger import create_logger
 from botocore.exceptions import ProfileNotFound
 from boto3.dynamodb.conditions import Key
