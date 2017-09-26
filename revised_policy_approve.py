@@ -136,11 +136,7 @@ def preserve_existing_policies(execution_id, existing_policies, dynamodb_table):
         return
 
     dynamodb_client.update_item(TableName=dynamodb_table,
-                                Key={
-                                    "execution_id": {
-                                        "S": execution_id
-                                    }
-                                },
+                                Key={ "execution_id": { "S": execution_id }},
                                 AttributeUpdates={
                                     "existing_policies": {
                                         "Value":{"SS": existing_policies}
