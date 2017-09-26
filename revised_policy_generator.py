@@ -13,7 +13,7 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
 from setup_logger import create_logger
 from tools import AWSEntity
-from tools import IAMPolicy
+from aws_iam_policy import IAMPolicy
 
 logger = create_logger(name="revised_policy_generator.py")
 
