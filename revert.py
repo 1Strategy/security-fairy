@@ -101,7 +101,8 @@ def get_response(event):
             };
 
             function redirect(){
-                var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/";
+                var name= document.getElementById("entity_arn").value.split("/")[1];
+                var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/"+name;
                 document.location.href = url;
             };
 
