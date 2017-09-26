@@ -11,6 +11,8 @@ import string
 import json
 import boto3
 import os
+from setup_logger
+from aws_api_tools import get_domain_from_proxy_api_gateway
 from requests.utils import unquote
 from botocore.exceptions import ProfileNotFound
 
@@ -22,6 +24,9 @@ except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
 
 
+logger = create_logger(name='api_approve.py')
+
+
 def lambda_handler(event, context):
     """ Executed by the Lambda service.
 
@@ -29,37 +34,19 @@ def lambda_handler(event, context):
     or Cancel stage of the Security Fairy tool.
     """
 
-    api_response = {
-        "statusCode": 500,
-        "headers":{
-            "Content-Type":"application/json"
-        },
-        "body":"Interal Server Error"
-    }
     method = event['httpMethod']
-    domain = get_domain(event)
+    domain = get_domain_from_proxy_api_gateway(event)
 
     if method == 'GET':# and event['queryStringParameters'] is not None:
+        logger.debug('GET Method')
         return api_website(event, domain)
 
     if method == 'POST':
+        logger.debug('POST Method')
         return token_task(event)
 
     # Default API Response returns an error
-    return api_response
-
-
-def get_domain(event):
-    """Return the domain that will display the new policy."""
-
-    if event['headers'] is None:
-        return "https://testinvocation/approve"
-
-    if 'amazonaws.com' in event['headers']['Host']:
-        return "https://{domain}/{stage}/".format(  domain=event['headers']['Host'],
-                                                    stage=event['requestContext']['stage'])
-    else:
-        return "https://{domain}/".format(domain=event['headers']['Host'])
+    return api_response(headers={'Content-Type':'application/json'}, body='Method Unsupported.')
 
 
 def token_task(event):
@@ -73,10 +60,10 @@ def token_task(event):
 
     try:
         if 'approve' in approved_or_denied:
-            print('approved')
+            logger.info('approved')
             response = sfn_client.send_task_success(taskToken=task_token,
                                                     output=json.dumps(body))
-            print(response)
+            logger.info(response)
             response_string = "New policy applied."
 
         if 'deny' in approved_or_denied:
@@ -86,15 +73,9 @@ def token_task(event):
             response_string = "Revised Policy deleted."
 
     except Exception as e:
-        print(e)
+        logger.info(e)
 
-    return {
-        "statusCode":200,
-        "headers":{
-            "Content-Type": "application/json"
-        },
-        "body": response_string
-    }
+    return api_response(statusCode=200, headers={'Content-Type':'application/json'}, body=response_string)
 
 
 def api_website(event, domain):
@@ -106,7 +87,7 @@ def api_website(event, domain):
     dynamodb_client = SESSION.client('dynamodb')
     try:
         execution_id = event['queryStringParameters']['execution-id']
-        print(execution_id)
+        logger.debug(execution_id)
         response_item   = dynamodb_client.get_item( TableName=os.environ['dynamodb_table'],
                                                     Key={
                                                         "execution_id": {
@@ -116,11 +97,11 @@ def api_website(event, domain):
         new_policy  = response_item['new_policy']['S']
         entity_arn  = response_item['entity_arn']['S']
         entity_name = entity_arn.split('/')[1]
-        print(response_item)
+        logger.info(response_item)
 
     except Exception as error:
-        print(error)
-        new_policy = {"Error": "This executionId has either expired or is invalid."}
+        logger.info(error)
+        new_policy = "Error: This executionId has either expired or is invalid."
 
     body = """
             <html>
@@ -208,16 +189,10 @@ def api_website(event, domain):
             </html>"""
 
     replace_dict = dict(new_policy=new_policy, domain=domain, entity_arn=entity_arn, entity_name=entity_name)
-    string.Template(body).safe_substitute(replace_dict)
+    return_body = string.Template(body).safe_substitute(replace_dict)
 
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "text/html",
-            "Access-Control-Allow-Origin": "*"
-        },
-        "body": string.Template(body).safe_substitute(replace_dict)
-    }
+    return api_response(statusCode=200, body=return_body)
+
 
 if __name__ == '__main__':
     EVENT = {
@@ -279,5 +254,5 @@ if __name__ == '__main__':
         u'path': u'/deny',
         u'isBase64Encoded': False
     }
-    print("Lambda Handler:")
-    print(lambda_handler(EVENT, {}))
+    logger.info("Lambda Handler:")
+    logger.info(lambda_handler(EVENT, {}))
