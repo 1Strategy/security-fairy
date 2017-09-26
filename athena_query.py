@@ -7,10 +7,10 @@ query to Athena.
 import re
 import boto3
 import logging
+from setup_logger import create_logger
 from botocore.exceptions import ProfileNotFound
 
-logging_level = logging.INFO
-logging.basicConfig(level=logging_level)
+logger = create_logger(name="athena_query.py", logging_level=logging.INFO)
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
@@ -48,7 +48,7 @@ def execute_query(entity_arn, num_days, s3_bucket):
      group by useridentity.arn
             , eventsource
           """.format(num_days=num_days, escaped_arn=escaped_arn)
-    print hql
+    logger.info(hql)
 
     output = 's3://{s3_bucket}/tables'.format(s3_bucket=s3_bucket)
     config = {
@@ -61,8 +61,8 @@ def execute_query(entity_arn, num_days, s3_bucket):
     athena_client = SESSION.client('athena')
     execution = athena_client.start_query_execution(QueryString=hql,
                                                     ResultConfiguration=config)
-    print("Query ID:")
-    print(execution['QueryExecutionId'])
+    logger.info("Query ID:")
+    logger.info(execution['QueryExecutionId'])
 
     return execution['QueryExecutionId']
 
@@ -72,7 +72,7 @@ def build_escaped_arn(entity_arn):
 
     split_arn = re.split('/|:', entity_arn)
     escaped_arn = "arn:aws:sts::" + split_arn[4] + ":assumed-role\\/" + split_arn[6]
-    logging.debug(escaped_arn)
+    logger.debug(escaped_arn)
     return escaped_arn
 
 if __name__ == '__main__':
