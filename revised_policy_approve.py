@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     try:
         execution_id    = event['execution_id']
         logger.debug(execution_id)
-        dynamodb_table  = event.get('dynamodb_table')#, os.environ['dynamodb_table'])
+        dynamodb_table  = event.get('dynamodb_table', os.environ['dynamodb_table'])
         logger.debug(dynamodb_table)
 
         policy_object   = get_revised_policy(execution_id, dynamodb_table)

@@ -182,7 +182,10 @@ Resources:
       - AWSStepFunctionsFullAccess
       Runtime: python2.7
       Timeout: 30
-
+      Environment:
+        Variables:
+          dynamodb_table: !Ref SecurityFairyDynamoDB
+          
   SecurityFairyDenyPolicy:
     Type: AWS::Serverless::Function
     Properties:
