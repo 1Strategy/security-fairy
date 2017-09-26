@@ -11,12 +11,11 @@ import boto3
 import logging
 from botocore.exceptions import ClientError
 from botocore.exceptions import ProfileNotFound
-from tools import Arn
+from setup_logger import create_logger
+from tools import AWSEntity
 from tools import IAMPolicy
 
-
-logging_level = logging.INFO
-logging.basicConfig(level=logging_level)
+logger = create_logger(name="revised_policy_generator.py")
 
 try:
     SESSION = boto3.session.Session(profile_name='training', region_name='us-east-1')
@@ -59,7 +58,7 @@ def lambda_handler(event, context):
     new_iam_policy = IAMPolicy()
     new_iam_policy.add_actions(service_level_actions)
 
-    logging.info(aws_entity.get_entity_name())
+    logger.info(aws_entity.get_entity_name())
     existing_entity_policies = get_existing_entity_policies_v2(aws_entity.get_entity_name())
     write_policies_to_dynamodb(query_execution_id, new_iam_policy.print_policy(), aws_entity.get_full_arn(), event.get('dynamodb_table','security_fairy_dynamodb_table'))
 
@@ -74,9 +73,9 @@ def get_query_results(query_execution_id):
     athena_client = SESSION.client('athena')
     result_set = []
     query = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
-    logging.debug(query)
+    logger.debug(query)
     query_state = query['QueryExecution']['Status']['State']
-    logging.debug(query_state)
+    logger.debug(query_state)
 
 
     if query_state in ['FAILED', 'CANCELLED']:
@@ -87,13 +86,13 @@ def get_query_results(query_execution_id):
 
     try:
         results = athena_client.get_query_results(QueryExecutionId=query_execution_id)
-        logging.debug(results)
+        logger.debug(results)
         for result in results["ResultSet"]["Rows"][1:]:
             result_set.append(result["Data"])
-        logging.debug(result_set)
+        logger.debug(result_set)
 
     except ClientError as cle:
-        logging.debug(cle)
+        logger.debug(cle)
 
     if not result_set:
         raise NoResults("Athena ResultSet {result_set}".format(result_set=result_set))
@@ -114,8 +113,8 @@ def get_permissions_from_query_v2(result_set):
         actions = result[2]['VarCharValue'].strip('[').strip(']').split(', ')
         for action in actions:
             permissions.append('{service}:{action}'.format(service=service, action=action))
-    logging.debug('service actions from Athena Query')
-    logging.debug(permissions)
+    logger.debug('service actions from Athena Query')
+    logger.debug(permissions)
     return permissions
 
 
@@ -124,7 +123,7 @@ def get_existing_entity_policies_v2(role_name):
     Retrieve existing managed policies for the queried role
     """
     iam_client = SESSION.client('iam')
-    logging.debug("role_name: {}".format(role_name))
+    logger.debug("role_name: {}".format(role_name))
 
     policies          = []
     attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)
@@ -152,7 +151,7 @@ def write_policies_to_dynamodb(execution_id, policy, entity_arn, dynamodb_table)
         dynamodb_item_to_be_written = { "execution_id": { "S": execution_id },
                                         "new_policy"  : { "S": policy       },
                                         "entity_arn"  : { "S": entity_arn   }}
-    logging.debug("Updated dynamodb_item: {}".format(dynamodb_item_to_be_written))
+    logger.debug("Updated dynamodb_item: {}".format(dynamodb_item_to_be_written))
     dynamodb_client.put_item(TableName=dynamodb_table,
                              Item=dynamodb_item_to_be_written)
 
@@ -174,8 +173,8 @@ def delete_execution(execution_id, dynamodb_table):
 
 def get_entity_arn(result_set):
     entity_arn = result_set[0][0]['VarCharValue']
-    logging.debug(entity_arn)
-    arn = Arn(entity_arn)
+    logger.debug(entity_arn)
+    arn = AWSEntity(entity_arn)
     arn.convert_assumed_role_to_role()
     return arn
 
