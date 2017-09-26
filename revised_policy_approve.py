@@ -11,7 +11,7 @@ import os
 import logging
 import re
 from setup_logger import create_logger
-from tools import Arn
+from aws_entity import AWSEntity
 from botocore.exceptions import ProfileNotFound
 
 try:
@@ -38,7 +38,7 @@ def lambda_handler(event, context):
 
         policy_object   = get_revised_policy(execution_id, dynamodb_table)
         logger.debug(policy_object)
-        entity_name     = Arn(policy_object['entity_arn']).get_entity_name()
+        entity_name     = AWSEntity(policy_object['entity_arn']).get_entity_name()
         logger.debug(entity_name)
 
         existing_policies = get_existing_managed_policies(entity_name)
@@ -56,7 +56,7 @@ def apply_revised_policy(policy_object):
 
     iam_client = SESSION.client('iam')
 
-    entity_arn      = Arn(policy_object['entity_arn'])
+    entity_arn      = AWSEntity(policy_object['entity_arn'])
     policy          = policy_object['policy']
     entity_name     = entity_arn.get_entity_name()
     account_number  = entity_arn.get_account_number()
