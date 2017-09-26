@@ -64,7 +64,7 @@ def token_task(event):
             response = sfn_client.send_task_success(taskToken=task_token,
                                                     output=json.dumps(body))
             logger.info(response)
-            response_string = "New policy applied."
+            response_string = "New policy applied. You will be redirected shortly."
 
         if 'deny' in approved_or_denied:
             response = sfn_client.send_task_failure(taskToken=task_token,
@@ -166,7 +166,7 @@ def api_website(event, domain):
                 $("#approve").click(function(){
                   console.log("Approve button clicked");
                   submitRequest("approve");
-                  setTimeout(redirect,2000);
+                  setTimeout(redirect,4000);
                 });
                 $("#deny").click(function(){
                   console.log("deny button clicked");
