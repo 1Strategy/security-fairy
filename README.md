@@ -30,11 +30,11 @@ How it works:
 ![](images/iam-role.png)<br>
 
 Security Fairy aggregates the CloudTrail Logs to build an IAM Policy based off of the actual actions taken by the role during the last X number of days.
-![images/iam-role.png](images/security-fairy.png)
+![](images/security-fairy.png)
 
 The final piece is a lambda function that keeps an eye out for API actions they are denied and gives the user the opportunity to add the missing permission to the Security-Fairy generated policy.
 
-![](images/security-fairy-remediation.png)<br>
+![](images/security-fairy-remediation.png)
 
 Prerequisites:
 - CloudTrail must be enabled in your account.
@@ -45,4 +45,4 @@ How to use it:
 
 - Deploy the CloudFormation templates from this repo into your AWS Account
 - Navigate to the API Gateway URL which is an output of the stack
-- Enter the ARN of the AWS Role you want to audit and the number of days the application has been running (or which contains enough log ddata a representitive set )
+- Enter the ARN of the AWS Role you want to audit and the number of days the application has been running (or which contains enough log data to form a representative set of the necessary API actions.)
