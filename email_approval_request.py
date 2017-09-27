@@ -8,6 +8,9 @@ import boto3
 import logging
 from requests.utils import quote
 from botocore.exceptions import ProfileNotFound
+from setup_logger import create_logger
+
+logger = create_logger(name="email_approval_request.py")
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
@@ -38,13 +41,13 @@ def lambda_handler(event, context):
     # Build message
     message = 'Approve changes from Security Fairy here: {approval_url}'\
                 .format(approval_url=approval_url)
-    logging.debug(message)
+    logger.debug(message)
     response = sns_client.publish(
         TopicArn=sns_arn,
         Message="{message}".format(message=message),
         Subject='Security Fairy Permissions Request')
 
-    logging.debug(response)
+    logger.debug(response)
 
 if __name__ == '__main__':
     EVENT = {

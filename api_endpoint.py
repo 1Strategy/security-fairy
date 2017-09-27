@@ -14,7 +14,7 @@ import string
 import boto3
 
 from botocore.exceptions import ProfileNotFound
-from tools import Arn
+from aws_entity import AWSEntity
 
 try:
     SESSION = boto3.session.Session(profile_name='training', region_name='us-east-1')
@@ -137,7 +137,7 @@ def validate_entity_arn(entity_arn):
     # Users are invalid: arn:aws:iam::842337631775:user/aaron
 
     try:
-        arn = Arn(entity_arn)
+        arn = AWSEntity(entity_arn)
     except Exception:
         raise ValueError('Malformed ARN. Please enter a role ARN.')
     print(arn.entity_type)

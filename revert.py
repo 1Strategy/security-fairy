@@ -3,11 +3,13 @@ import json
 import logging
 import os
 import re
-from tools import Arn
-from tools import AWSEntity
-from setup_logger import create_logger
-from botocore.exceptions import ProfileNotFound
-from boto3.dynamodb.conditions import Key
+from aws_entity     import AWSEntity
+from setup_logger   import create_logger
+from aws_api_tools  import api_response
+from aws_api_tools  import api_website
+from aws_api_tools  import get_domain_from_proxy_api_gateway
+from botocore.exceptions        import ProfileNotFound
+from boto3.dynamodb.conditions  import Key
 
 logger = create_logger(name = "revert.py", logging_level=logging.INFO)
 
@@ -24,7 +26,7 @@ def lambda_handler(event, context):
 
     if method == 'GET':
         logger.info('Request was an HTTP GET Request')
-        return get_response()
+        return get_response(event)
 
     if method == 'POST':
         logger.info('Request was an HTTP POST Request')
@@ -36,19 +38,148 @@ def lambda_handler(event, context):
     return api_response()
 
 
-def get_response():
-    return api_response(body='GET Method failed.')
+def get_response(event):
+    entities = get_all_iam_audited_entities()
+    # logger.info(type(entities))
+    existing_entities = nosql_to_list_of_dicts(entities)
+
+    for entity in existing_entities[0]:
+        logging.debug(entity)
+        logging.debug(type(entity))
+
+    domain = get_domain_from_proxy_api_gateway(event)
+
+    body = """
+            <html>
+            <body bgcolor="#E6E6FA">
+            <head>
+            <!-- Latest compiled and minified CSS -->
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+            <style>
+            .code {
+                max-height: 500px;
+                max-width: 900px;
+                overflow: scroll;
+                text-align: left;
+                margin-bottom: 20px;
+            }
+            th, td {
+              text-align: left;
+              padding: 15px;
+              height: 50px;
+              vertical-align: top;
+              border-bottom: 1px solid #ddd;
+            }
+            td {
+               font-size:x-small;
+            }
+            </style>
+            <script>
+            var dict = {};
+            function submitRequest(revert){
+                dict["entity_arn"] = document.getElementById("entity_arn").value;
+                $.ajax({
+                  type: 'POST',
+                  headers: {
+                      'Content-Type':'application/json',
+                      'Access-Control-Allow-Origin': '*',
+                      'Accept':'text/html'
+                  },
+                  url:'$domain' + 'revert',
+                  crossDomain: true,
+                  data: JSON.stringify(dict),
+                  dataType: 'text',
+                  success: function(responseData) {
+                      document.getElementById("output").innerHTML = responseData;
+                  },
+                  error: function (responseData) {
+                      alert('POST failed: '+ JSON.stringify(responseData));
+                  }
+            });
+
+            };
+
+            function redirect(){
+                var name= document.getElementById("entity_arn").value.split("/")[1];
+                var url = "https://console.aws.amazon.com/iam/home?region=us-east-1#/roles/"+name;
+                document.location.href = url;
+            };
+
+            $(document).ready(function(){
+
+                //document.getElementById("output").innerHTML = JSON.stringify({}, null, "\t");
+                $("#revert").click(function(){
+                  console.log("Approve button clicked");
+                  submitRequest("revert");
+                  setTimeout(redirect,4000);
+                });
+                $("#cancel").click(function(){
+                  console.log("Cancel button clicked");
+                  setTimeout(redirect,500);
+                });
+            });
+
+            </script>
+            </head>
+            <body>
+            <center>
+            <title>IAM Security Fairy</title>
+            <h1><span class="glyphicon glyphicon-fire text-danger" ></span> IAM Security Fairy</h1>
+
+            <div class="code"><pre>
+            <table class="code">
+              <tr>
+                <th>Execution Id</th>
+                <th>Role ARN</th>
+                <th>Original Managed Policies</th>
+              </tr>
+              $security_fairy_entities_list
+            </table>
+            </pre></div>
+            <div class="code"><pre id='output' style="visibility:hidden;"></pre></div>
+            <div class="code">Enter the arn of the role you would like to revert:<br>
+            <form style= "display: inline-block;" action="" method="post">
+                <textarea rows="1" cols="40" name="text" id="entity_arn" placeholder="arn:aws:iam::0123456789:role/roleName"></textarea>
+            </form>
+            <button style= "display: inline-block;margin-bottom: 20px;" class="btn btn-primary" id='revert'>Revert</button>
+            <button style= "display: inline-block;margin-bottom: 20px;" class="btn btn-danger" id='cancel'>Cancel</button>
+            </div>
+            </center>
+            </body>
+            </html>"""
+
+    logger.info(existing_entities[0])
+    security_fairy_entities_list = ''
+    for entity in existing_entities:
+        table_row = """<tr>
+                          <td>{execution_id}</td>
+                          <td>{entity_arn}</td>
+                          <td>""".format(execution_id=entity['execution_id'],
+                                         entity_arn=entity['entity_arn'])
+
+        for policy in entity['existing_policies']:
+            table_row+= "{policy}<br>".format(policy=policy.split(':')[5])
+
+        table_row+="</td></tr>"
+        security_fairy_entities_list += table_row
+
+    safe_substitute_dict = dict(domain = domain, security_fairy_entities_list=security_fairy_entities_list)
+    return api_website(website_body=body, safe_substitute_dict=safe_substitute_dict)
+
 
 
 def get_all_iam_audited_entities():
 
     dynamodb_client = SESSION.client('dynamodb')
-    response_item   = dynamodb_client.scan(   TableName='security_fairy_dynamodb_table',
+    response_item   = dynamodb_client.scan( TableName='security_fairy_dynamodb_table',
                                             AttributesToGet=[
+                                                'execution_id',
                                                 'entity_arn',
                                                 'existing_policies'
                                             ])['Items']
     logger.info(response_item)
+    logger.info(type(response_item))
     return response_item
 
 
@@ -60,7 +191,7 @@ def post_response(aws_entity):
         logger.error(e)
         return api_response(body='Error - Role wasn\'t reverted properly.')
 
-    return api_response(statusCode=200, body='Success: The IAM Role has had it\'s pre-security fairy permissions established')
+    return api_response(statusCode=200, headers={"Access-Control-Allow-Origin":"*", "Content-Type":"text/html"}, body='Success: The IAM Role has had it\'s pre-security fairy permissions established')
 
 
 def revert_role_managed_policies(aws_entity):
@@ -72,7 +203,7 @@ def revert_role_managed_policies(aws_entity):
 
     associate_preexisting_policies(aws_entity)
     disassociate_security_fairy_policy(aws_entity)
-
+    # delete_security_fairy_dynamodb_entry(aws_entity)
 
 def get_preexisting_policies(entity_arn):
 
@@ -157,21 +288,6 @@ def delete_policy(policy_arn):
                                                 VersionId=version['VersionId'])
     iam_client.delete_policy(PolicyArn=policy_arn)
 
-
-def api_response(statusCode=500, headers={'Content-Type':'text/html'}, body='Internal Service Error'):
-    if statusCode < 100 or statusCode > 599:
-        raise ValueError('Invalid HTTP statusCode')
-
-    return_value =  {
-                'statusCode': statusCode,
-                'headers'   : headers,
-                'body'      : body
-            }
-
-    logger.info(return_value)
-    return return_value
-
-
 def nosql_to_list_of_dicts(dynamodb_response_item):
     refactored_dicts = []
     for item in dynamodb_response_item:
@@ -183,6 +299,7 @@ def nosql_to_list_of_dicts(dynamodb_response_item):
     return(refactored_dicts)
 
 
+
 if __name__ == '__main__':
     # entity_arn = 'arn:aws:iam::281782457076:role/1s_tear_down_role'
     # disassociate_security_fairy_policy(entity_arn)
@@ -190,5 +307,34 @@ if __name__ == '__main__':
     # associate_preexisting_policies("arn:aws:iam::281782457076:role/1s_tear_down_role")
     # get_all_iam_audited_entities()
     # print(nosql_to_list_of_dicts(get_all_iam_audited_entities()))
-    event = {"resource":"/revert","path":"/revert","httpMethod":"POST","headers":None,"queryStringParameters":None,"pathParameters":None,"stageVariables":None,"cognitoAuthenticationType":None,"cognitoAuthenticationProvider":None,"userArn":"arn:aws:sts::281782457076:assumed-role/1S-Admins/justiniravani","body":"{\"entity_arn\":\"arn:aws:iam::281782457076:role/1s_tear_down_role\"}","isBase64Encoded":False}
-    lambda_handler(event, {})
+    event = {
+                "resource":"/revert",
+                "path":"/revert",
+                "httpMethod":"GET",
+                "headers":None,
+                "queryStringParameters":None,
+                "pathParameters":None,
+                "stageVariables":None,
+                "cognitoAuthenticationType":None,
+                u'headers': {
+                    u'origin': u'https://twzwjoriak.execute-api.us-east-1.amazonaws.com',
+                    u'Accept': u'text/html',
+                    u'Host': u'twzwjoriak.execute-api.us-east-1.amazonaws.com'
+                },
+                u'requestContext': {
+                    u'resourceId': u'ktk3jq',
+                    u'apiId': u'ezwzmmh526',
+                    u'resourcePath': u'/{approval}',
+                    u'httpMethod': u'GET',
+                    u'requestId': u'2938ad50-50a7-11e7-bff1-93579d44e732',
+                    u'path': u'/Prod/approve',
+                    u'accountId': u'281782457076',
+                    u'stage': u'Prod'
+                }
+            }
+    # lambda_handler(event, {})
+
+
+    # dynamodb_response_item = [{u'entity_arn': {u'S': u'arn:aws:iam::281782457076:role/1s_tear_down_role'}, u'existing_policies': {u'SS': [u'arn:aws:iam::281782457076:policy/1S-NetworkAdmin-Policy', u'arn:aws:iam::281782457076:policy/AccessNavigationNotebookObjects', u'arn:aws:iam::281782457076:policy/AllowAuroraToGdeltBucket', u'arn:aws:iam::281782457076:policy/AllowUserChangePassword', u'arn:aws:iam::aws:policy/AdministratorAccess']}, u'execution_id': {u'S': u'4c0201ab-76e3-4c42-80ed-fdd99f5968cf'}}]
+    # print(type(dynamodb_response_item))
+    logger.info(get_response(event)['body'].strip('\n'))

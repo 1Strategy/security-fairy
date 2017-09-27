@@ -5,10 +5,11 @@ import logging
 import os
 import re
 from tools import Arn
+from setup_logger import create_logger
 from aws_session_manager import AWS_Session
 from botocore.exceptions import ProfileNotFound
 
-logging.basicConfig(level=logging.INFO)
+logger = create_logger(name="denied_notification.py")
 
 try:
     SESSION = boto3.session.Session(profile_name='training',
@@ -56,7 +57,7 @@ def check_records_for_error_code(records, error_codes = ['AccessDenied', 'Access
 
     for record in records:
         if record.get('errorCode', None) in error_codes:
-            logging.debug(record)
+            logger.debug(record)
             extracted_information = {}
             arn             = Arn(record['userIdentity'].get('arn', None))
             role_name       = arn.get_entity_name()
@@ -66,10 +67,10 @@ def check_records_for_error_code(records, error_codes = ['AccessDenied', 'Access
             extracted_information['denied_action']  = service_name + ':' + record['eventName']
 
             if not extracted_information in matched_error_records:
-                logging.debug('extracted_information doesn\'t already exist in list of access denieds')
+                logger.info('extracted_information doesn\'t already exist in list of access denieds')
                 matched_error_records.append(extracted_information)
 
-    logging.debug(matched_error_records)
+    logger.debug(matched_error_records)
     return matched_error_records
 
 
@@ -115,13 +116,13 @@ def get_security_fairy_audited_entities(access_denied_records):
         entity      = Arn(record['arn'])
         entity.convert_assumed_role_to_role()
         entity_arn  = entity.get_full_arn()
-        logging.debug(entity_arn)
+        logger.debug(entity_arn)
         if entity.is_role() and is_access_denied_security_fairy_audited_role(entity_arn):
-            logging.debug('Adding access_denied_record to list')
+            logger.debug('Adding access_denied_record to list')
             record['arn'] = entity_arn
             audited_entities.append(record)
 
-    logging.info(audited_entities)
+    logger.info(audited_entities)
     return audited_entities
 
 
@@ -150,7 +151,7 @@ def get_existing_denied_actions(entity_arn, dynamodb_table):
     existing_denied_actions = [] if response.get('denied_actions') is None else response['denied_actions']['SS']
 
     execution_id            = response['execution_id']['S']
-    logging.info(existing_denied_actions)
+    logger.info(existing_denied_actions)
 
     return execution_id, existing_denied_actions
 
@@ -163,15 +164,15 @@ def is_access_denied_security_fairy_audited_role(role_arn):
     role        = Arn(role_arn)
     role_name   = role.get_entity_name()
 
-    logging.info(role_name)
+    logger.info(role_name)
     attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)
 
     # Examines all attached policies and search for an attached policy with the
     # following format:  *_security_fairy_revised_policy
     # (see security_fairy_revised_policy_approve.py line 58)
-    logging.debug(attached_policies)
+    logger.debug("Policies attached to {}:".format(role.get_full_arn()))
     for policy in attached_policies['AttachedPolicies']:
-        logging.info(policy['PolicyName'])
+        logger.info(policy['PolicyName'])
         if '-security-fairy-revised-policy' in policy['PolicyName']:
             return True
 
