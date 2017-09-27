@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 *.pyc
+.DS_Store
 
 # Distribution / packaging
 .vscode/
@@ -133,4 +134,3 @@ six.py
 
 # xml
 *.xml
-
