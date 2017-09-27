@@ -14,18 +14,18 @@ To help streamline the process on the AWS, we built a serverless tool that can b
 ## Security-Fairy
 The intention of this tool is to help give developers a **STARTING POINT** to build properly scoped IAM policies that are as minimally permissive as possible.
 
-> This tool is only to be used in a sandbox/dev environment and should **never** be used in Production or other secure environments.
+> This tool is only to be used in a sandbox/dev environment and should **NEVER** be used in Production or other secure environments.
 
-What this tool will do:
+### What this tool will do:
 - Create a managed policy for a given AWS Role which contains only the "necessary" set of AWS actions the application needs to function. This is determined by what AWS API actions a given role has taken based on the past X days of CloudTrail Logs.
 - The resulting policy will serve as a STARTING POINT for an IAM Policy that can be used in later environments
 
-What this tool won't do:
+### What this tool won't do:
 - This tool won't add/remove/modify ***inline*** IAM Policies. This tool only handles **Managed IAM Policies**.
 - This tool won't build policies which incorporate **IAM Policy Conditionals**.
 - This tool won't build policies which incorporate **Resource** specific handling.
 
-How it works:
+## How it works:
 
 Any Role requires IAM Permissions to perform API actions on AWS Resources. As the AWS Resource/User perform API actions using this role, all of those actions are captured by CloudTrail and loaded into an S3 Bucket.
 
@@ -38,12 +38,12 @@ The final piece is a lambda function that keeps an eye out for API actions that 
 
 ![](images/security-fairy-remediation.png)
 
-Prerequisites:
+### Prerequisites:
 - CloudTrail must be enabled in your account.
 - An S3 bucket for the CloudTrail logs to live in.
 - Ability to create IAM resources via CloudFormation
 
-How to use it:
+### How to use it:
 
 - Deploy the CloudFormation templates from this repo into your AWS Account
 - Navigate to the API Gateway URL which is an output of the stack
