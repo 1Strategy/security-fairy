@@ -27,6 +27,8 @@ What this tool won't do:
 
 How it works:
 
+Any Role requires IAM Permissions to perform API actions on AWS Resources. As the AWS Resource/User perform API actions using this role, all of those actions are captured by CloudTrail and loaded into an S3 Bucket.
+
 ![](images/iam-role.png)<br>
 
 Security Fairy aggregates the CloudTrail Logs to build an IAM Policy based off of the actual actions taken by the role during the last X number of days.
