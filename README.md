@@ -34,7 +34,7 @@ Any Role requires IAM Permissions to perform API actions on AWS Resources. As th
 Security Fairy aggregates the CloudTrail Logs to build an IAM Policy based off of the actual actions taken by the role during the last X number of days.
 ![](images/security-fairy.png)
 
-The final piece is a lambda function that keeps an eye out for API actions they are denied and gives the user the opportunity to add the missing permission to the Security-Fairy generated policy.
+The final piece is a lambda function that keeps an eye out for API actions that are denied and gives the user the opportunity to add the missing permission to the Security-Fairy generated policy.
 
 ![](images/security-fairy-remediation.png)
 
