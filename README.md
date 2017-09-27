@@ -14,7 +14,7 @@ To help streamline the process on the AWS, we built a serverless tool that can b
 ## Security-Fairy
 The intention of this tool is to help give developers a **STARTING POINT** to build properly scoped IAM policies that are as minimally permissive as possible.
 
-This tool is only to be used in a sandbox/dev environment and should **never** be used in Production or other secure environments.
+> This tool is only to be used in a sandbox/dev environment and should **never** be used in Production or other secure environments.
 
 What this tool will do:
 - Create a managed policy for a given AWS Role which contains only the "necessary" set of AWS actions the application needs to function. This is determined by what AWS API actions a given role has taken based on the past X days of CloudTrail Logs.
