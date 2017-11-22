@@ -23,8 +23,12 @@ DATE_STAMP = TIME.strftime('%Y%m%d')
 PROFILE    = 'sandbox'
 # need to find cloudtrail bucket with the CloudTrail API
 # in boto3: describe_trails()[trailList].get("S3BucketName")
-cloudtrail_bucket = "1strategy-sandbox.cloudtrail"
 
+# Build in Sandbox:
+cloudtrail_bucket = "1strategy-sandbox.cloudtrial"
+
+# Build in Training:
+# cloudtrail_bucket = "1strategy-training-traillogs"
 
 def create_session():
     """Establish an AWS session through boto3
