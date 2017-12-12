@@ -13,22 +13,17 @@ import json
 import datetime
 import logging
 import boto3
+from cfnresponse import send, SUCCESS, FAILED
 from botocore.exceptions import ProfileNotFound
 
 
 # These parameters should remain static
-TIME       = datetime.datetime.utcnow()
-AMZ_DATE   = TIME.strftime('%Y%m%dT%H%M%SZ')
-DATE_STAMP = TIME.strftime('%Y%m%d')
-PROFILE    = 'sandbox'
-# need to find cloudtrail bucket with the CloudTrail API
-# in boto3: describe_trails()[trailList].get("S3BucketName")
+TIME              = datetime.datetime.utcnow()
+AMZ_DATE          = TIME.strftime('%Y%m%dT%H%M%SZ')
+DATE_STAMP        = TIME.strftime('%Y%m%d')
+PROFILE           = 'sandbox'
+cloudtrail_bucket = os.environ("cloudtrail_bucket")
 
-# Build in Sandbox:
-cloudtrail_bucket = "1strategy-sandbox.cloudtrial"
-
-# Build in Training:
-# cloudtrail_bucket = "1strategy-training-traillogs"
 
 def create_session():
     """Establish an AWS session through boto3
@@ -39,7 +34,7 @@ def create_session():
             region_name='us-east-1'
         )
     except ProfileNotFound as pnf:
-        session = boto3.session.Session(region_name='us-east-1')
+        session = boto3.session.Session()
 
     return session
 
@@ -210,18 +205,25 @@ def lambda_handler(event, context):
     logging.debug("Environment Variables:")
     logging.info("Start Execution")
 
-    sess = create_session()
+    try:
+        sess = create_session()
 
-    saved = save_query(sess, cloudtrail_bucket)
-    logging.debug(saved)
-    
-    db = build_database(sess, '1s-data-lake')
-    logging.debug(db)
-    
-    executed = execute_cloudtrail_table_creation(sess, '1s-data-lake')
-    logging.debug(executed)
-    
-    logging.info("End Execution")
+        saved = save_query(sess, cloudtrail_bucket)
+        logging.debug(saved)
+        
+        db = build_database(sess, '1s-data-lake')
+        logging.debug(db)
+        
+        executed = execute_cloudtrail_table_creation(sess, '1s-data-lake')
+        logging.debug(executed)
+        logging.info("Successful Execution")
+
+        send(event, context, SUCCESS)
+
+    except:
+
+        logging.info("Failed Execution")
+        send(event, context, FAILED)
 
 
 if __name__ == '__main__':
