@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Deploys a security auditing tool
+
 Parameters:
 
   CloudTrailS3Bucket:
@@ -15,10 +16,197 @@ Parameters:
 
 Resources:
 
+  #############################################################################
+  ## SNS                                                                     ##
+  #############################################################################
+
+  SecurityFairySNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: SecurityFairy
+      Subscription:
+        -
+          Endpoint:
+            Ref: SNSEmail
+          Protocol: "email"
+      TopicName: security_fairy_topic
+
+  #############################################################################
+  ## S3 BUCKET                                                               ##
+  #############################################################################
+
   SecurityFairyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
+
+#   SecurityFairyS3BucketPolicy:
+#     Type: "AWS::S3::BucketPolicy"
+#     Properties:
+#       Bucket: !Ref SecurityFairyS3Bucket
+#       PolicyDocument:
+#         Statement:
+#         -
+#           Action:
+#             - "s3:GetObject"
+#           Effect: "Allow"
+#           Resource:
+#             Fn::Join:
+#               - ""
+#               -
+#                 - "arn:aws:s3:::"
+#                 -
+#                   Ref: "SecurityFairyS3Bucket"
+#                 - "/*"
+#           Principal: "*"
+#           Condition:
+#             ArnLike:
+#               aws:SourceArn:
+#                 - "http://www.example.com/*"
+#                 - "http://example.com/*"
+
+  #############################################################################
+  ## DYNAMODB TABLE                                                          ##
+  #############################################################################
+
+  SecurityFairyDynamoDB:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: execution_id
+          AttributeType: S
+        - AttributeName: entity_arn
+          AttributeType: S
+      KeySchema:
+        - AttributeName: execution_id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - IndexName: entity_arn
+          KeySchema:
+            - AttributeName: entity_arn
+              KeyType: HASH
+          Projection:
+            NonKeyAttributes:
+              - entity_arn
+            ProjectionType: INCLUDE
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      TableName: "security_fairy_dynamodb_table"
+
+  #############################################################################
+  ## STEP FUNCTIONS                                                          ##
+  #############################################################################
+
+  SecurityFairyApprovalActivity:
+    Type: "AWS::StepFunctions::Activity"
+    Properties:
+      Name: security_fairy_approval_activity
+
+  # StateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+  #     DefinitionString: !Sub |-
+  #       {
+  #       	"StartAt": "InjectVariables",
+  #       	"States": {
+  #       		"InjectVariables": {
+  #            "Type": "Task",
+  #            "Resource": "${lambda_variable_injection}",
+  #            "Next": "QueryAthena"
+  #           },
+  #       		"QueryAthena": {
+  #       			"Type": "Task",
+  #       			"Resource": "${lambda_athena_query}",
+  #       			"Next": "WaitForQuery"
+  #           },
+  #       		"WaitForQuery": {
+  #       			"Type": "Wait",
+  #       			"Seconds": 60,
+  #       			"Next": "BuildPolicy"
+  #           },
+  #       		"BuildPolicy": {
+  #       			"Type": "Task",
+  #       			"Resource": ${lambda_build_policy}",
+  #       			"Retry": [{
+  #       				"ErrorEquals": [
+  #       					"States.ALL"
+  #               ],
+  #       				"IntervalSeconds": 60,
+  #       				"MaxAttempts": 3,
+  #       				"BackoffRate": 1.5
+  #             }],
+  #       			"Next": "PromptForApproval"
+  #           },
+  #       		"PromptForApproval": {
+  #       			"Type": "Parallel",
+  #       			"End": true,
+  #       			"Branches": [{
+  #       					"StartAt": "Approval",
+  #       					"States": {
+  #       						"Approval": {
+  #       							"Type": "Task",
+  #       							"Resource": ${activity}",
+  #       							"TimeoutSeconds": 3600,
+  #       							"Catch": [{
+  #       								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+  #       								"Next": "PolicyDenial"
+  #                     }],
+  #       							"Next": "PolicyApply"
+  #                   },
+  #       						"PolicyApply": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_revised_policy_approve}",
+  #       							"End": true
+  #                   },
+  #       						"PolicyDenial": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_revised_policy_deny}",
+  #       							"End": true
+  #                   }
+  #                 }
+  #               },
+  #               {
+  #       					"StartAt": "WaitForCode",
+  #       					"States": {
+  #       						"WaitForCode": {
+  #       							"Type": "Wait",
+  #       							"Seconds": 3,
+  #       							"Next": "GenerateCode"
+  #                   },
+  #       						"GenerateCode": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_get_task_token}",
+  #       							"Next": "SendApprovalRequest"
+  #                   },
+  #       						"SendApprovalRequest": {
+  #       							"Type": "Task",
+  #       							"Resource": "${lambda_email_approval_request}",
+  #       							"End": true
+  #                   }
+  #                 }
+  #               }
+  #             ]
+  #           }
+  #         }
+  #       }
+  #       - {
+  #           lambda_variable_injection:      !GetAtt [ SecurityFairyVariableInjection, Arn],
+  #           lambda_athena_query:            !GetAtt [ SecurityFairyAthenaQuery,       Arn],
+  #           lambda_build_policy:            !GetAtt [ SecurityFairyPolicyGenerator,   Arn],
+  #           activity:                       !GetAtt [ SecurityFairyApprovalActivity,  Arn],
+  #           lambda_revised_policy_approve:  !GetAtt [ SecurityFairyApplyPolicy,       Arn],
+  #           lambda_revised_policy_deny:     !GetAtt [ SecurityFairyDenyPolicy,        Arn],
+  #           lambda_get_task_token:          !GetAtt [ SecurityFairyGetTaskToken,      Arn],
+  #           lambda_email_approval_request:  !GetAtt [ SecurityFairyEmailApproval,     Arn]}
+
+  #############################################################################
+  ## LAMBDA FUNCTIONS                                                        ##
+  #############################################################################
 
   SecurityFairyApiEndpoint:
     Type: AWS::Serverless::Function
@@ -108,6 +296,30 @@ Resources:
       - AmazonS3FullAccess
       Runtime: python2.7
       Timeout: 30
+
+  SecurityFairyTableCreation:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_build_cloudtrail_table'
+      CodeUri: .
+      Description: 'This function builds the required cloudtrail table in Athena'
+      Handler: build_cloudtrail_table.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonAthenaFullAccess
+      - AWSLambdaBasicExecutionRole
+      - AWSLambdaReadOnlyAccess
+      Runtime: python2.7
+      Timeout: 30
+      Environment:
+        Variables:
+          cloudtrail_bucket: !Ref CloudTrailS3Bucket
+
+  LaunchSecurityFairyTableCreation:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: SecurityFairyTableCreation
+    Properties:
+      ServiceToken: !GetAtt SecurityFairyTableCreation.Arn
 
   SecurityFairyPolicyGenerator:
     Type: AWS::Serverless::Function
@@ -214,173 +426,6 @@ Resources:
       Timeout: 30
       Policies:
       - AWSStepFunctionsFullAccess
-
-  SecurityFairyDynamoDB:
-    Type: 'AWS::DynamoDB::Table'
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: execution_id
-          AttributeType: S
-        - AttributeName: entity_arn
-          AttributeType: S
-      KeySchema:
-        - AttributeName: execution_id
-          KeyType: HASH
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-      GlobalSecondaryIndexes:
-        - IndexName: entity_arn
-          KeySchema:
-            - AttributeName: entity_arn
-              KeyType: HASH
-          Projection:
-            NonKeyAttributes:
-              - entity_arn
-            ProjectionType: INCLUDE
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
-      TableName: "security_fairy_dynamodb_table"
-
-  SecurityFairySNSTopic:
-    Type: "AWS::SNS::Topic"
-    Properties:
-      DisplayName: SecurityFairy
-      Subscription:
-        -
-          Endpoint:
-            Ref: SNSEmail
-          Protocol: "email"
-      TopicName: security_fairy_topic
-
-  SecurityFairyApprovalActivity:
-    Type: "AWS::StepFunctions::Activity"
-    Properties:
-      Name: security_fairy_approval_activity
-
-  # StateMachine:
-  #   Type: AWS::StepFunctions::StateMachine
-  #   Properties:
-  #     RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
-  #     DefinitionString: !Sub |-
-  #       {
-  #       	"StartAt": "InjectVariables",
-  #       	"States": {
-  #       		"InjectVariables": {
-  #            "Type": "Task",
-  #            "Resource": "${lambda_variable_injection}",
-  #            "Next": "QueryAthena"
-  #           },
-  #       		"QueryAthena": {
-  #       			"Type": "Task",
-  #       			"Resource": "${lambda_athena_query}",
-  #       			"Next": "WaitForQuery"
-  #           },
-  #       		"WaitForQuery": {
-  #       			"Type": "Wait",
-  #       			"Seconds": 60,
-  #       			"Next": "BuildPolicy"
-  #           },
-  #       		"BuildPolicy": {
-  #       			"Type": "Task",
-  #       			"Resource": ${lambda_build_policy}",
-  #       			"Retry": [{
-  #       				"ErrorEquals": [
-  #       					"States.ALL"
-  #               ],
-  #       				"IntervalSeconds": 60,
-  #       				"MaxAttempts": 3,
-  #       				"BackoffRate": 1.5
-  #             }],
-  #       			"Next": "PromptForApproval"
-  #           },
-  #       		"PromptForApproval": {
-  #       			"Type": "Parallel",
-  #       			"End": true,
-  #       			"Branches": [{
-  #       					"StartAt": "Approval",
-  #       					"States": {
-  #       						"Approval": {
-  #       							"Type": "Task",
-  #       							"Resource": ${activity}",
-  #       							"TimeoutSeconds": 3600,
-  #       							"Catch": [{
-  #       								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
-  #       								"Next": "PolicyDenial"
-  #                     }],
-  #       							"Next": "PolicyApply"
-  #                   },
-  #       						"PolicyApply": {
-  #       							"Type": "Task",
-  #       							"Resource": "${lambda_revised_policy_approve}",
-  #       							"End": true
-  #                   },
-  #       						"PolicyDenial": {
-  #       							"Type": "Task",
-  #       							"Resource": "${lambda_revised_policy_deny}",
-  #       							"End": true
-  #                   }
-  #                 }
-  #               },
-  #               {
-  #       					"StartAt": "WaitForCode",
-  #       					"States": {
-  #       						"WaitForCode": {
-  #       							"Type": "Wait",
-  #       							"Seconds": 3,
-  #       							"Next": "GenerateCode"
-  #                   },
-  #       						"GenerateCode": {
-  #       							"Type": "Task",
-  #       							"Resource": "${lambda_get_task_token}",
-  #       							"Next": "SendApprovalRequest"
-  #                   },
-  #       						"SendApprovalRequest": {
-  #       							"Type": "Task",
-  #       							"Resource": "${lambda_email_approval_request}",
-  #       							"End": true
-  #                   }
-  #                 }
-  #               }
-  #             ]
-  #           }
-  #         }
-  #       }
-  #       - {
-  #           lambda_variable_injection:      !GetAtt [ SecurityFairyVariableInjection, Arn],
-  #           lambda_athena_query:            !GetAtt [ SecurityFairyAthenaQuery,       Arn],
-  #           lambda_build_policy:            !GetAtt [ SecurityFairyPolicyGenerator,   Arn],
-  #           activity:                       !GetAtt [ SecurityFairyApprovalActivity,  Arn],
-  #           lambda_revised_policy_approve:  !GetAtt [ SecurityFairyApplyPolicy,       Arn],
-  #           lambda_revised_policy_deny:     !GetAtt [ SecurityFairyDenyPolicy,        Arn],
-  #           lambda_get_task_token:          !GetAtt [ SecurityFairyGetTaskToken,      Arn],
-  #           lambda_email_approval_request:  !GetAtt [ SecurityFairyEmailApproval,     Arn]}
-
-#   SecurityFairyS3BucketPolicy:
-#     Type: "AWS::S3::BucketPolicy"
-#     Properties:
-#       Bucket: !Ref SecurityFairyS3Bucket
-#       PolicyDocument:
-#         Statement:
-#         -
-#           Action:
-#             - "s3:GetObject"
-#           Effect: "Allow"
-#           Resource:
-#             Fn::Join:
-#               - ""
-#               -
-#                 - "arn:aws:s3:::"
-#                 -
-#                   Ref: "SecurityFairyS3Bucket"
-#                 - "/*"
-#           Principal: "*"
-#           Condition:
-#             ArnLike:
-#               aws:SourceArn:
-#                 - "http://www.example.com/*"
-#                 - "http://example.com/*"
 
 Outputs:
   ApiEndpoint:
