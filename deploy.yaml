@@ -420,5 +420,5 @@ Resources:
 
 Outputs:
   ApiEndpoint:
-    Description: "Security Fairy Invokation Endpoint"
+    Description: "Security Fairy Invocation Endpoint"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/start"
