@@ -33,10 +33,12 @@ class IAMPolicy:
         service = self.__get_service_alias__(split_statement_action[0])
 
         if service == 'lambda':
-            # Checks for extraneous lambda api version information: e.g.
-            # lambda:GetFunctionv20170316            #
+            # Checks for extraneous lambda api version information:
+            # e.g.  lambda:ListTags20170331
+            #       lambda:GetFunctionConfiguration20150331v2"
+            #       lambda:"UpdateFunctionCode20150331v2"
 
-            api_version_info = re.findall(r"(v\d+)|(\d+)", split_statement_action[1])
+            api_version_info = re.findall(r"(\d+v\d+)|(\d+)", split_statement_action[1])
             if api_version_info:
                 for api_version in api_version_info[0]:
                     logging.debug(api_version)
