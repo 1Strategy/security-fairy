@@ -1,7 +1,7 @@
 
 import logging
 import json
-
+import re
 class IAMPolicy:
 
     def __init__(self, logging_level = logging.DEBUG):
@@ -33,7 +33,17 @@ class IAMPolicy:
         service = self.__get_service_alias__(split_statement_action[0])
 
         if service == 'lambda':
-            action = ''.join([i for i in split_statement_action[1] if not i.isdigit()])
+            # Checks for extraneous lambda api version information: e.g.
+            # lambda:GetFunctionv20170316            #
+
+            api_version_info = re.findall(r"(v\d+)|(\d+)", split_statement_action[1])
+            if api_version_info:
+                for api_version in api_version_info[0]:
+                    logging.debug(api_version)
+                    if api_version is not '':
+                        action = split_statement_action[1].replace(api_version,'')
+            else:
+                action = split_statement_action[1]
         else:
             action = split_statement_action[1]
 
