@@ -13,7 +13,6 @@ import json
 import datetime
 import logging
 import boto3
-from cfnresponse import send, SUCCESS, FAILED
 from botocore.exceptions import ProfileNotFound
 
 
