@@ -70,7 +70,7 @@ def post_response(event, domain):
         invoke_state_machine(inputs)
 
         api_return_payload['statusCode'] = 200
-        api_return_payload['body'] = 'Inputs are valid. You should receive an email shortly.'
+        api_return_payload['body'] = 'The auditing process can take up to 20 minutes. An email will be sent upon completion.'
 
     except Exception as error:
         print(error)
