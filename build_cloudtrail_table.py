@@ -18,13 +18,21 @@ from botocore.exceptions import ProfileNotFound
 
 
 # These parameters should remain static
-TIME              = datetime.datetime.utcnow()
-AMZ_DATE          = TIME.strftime('%Y%m%dT%H%M%SZ')
-DATE_STAMP        = TIME.strftime('%Y%m%d')
-PROFILE           = 'sandbox'
-cloudtrail_bucket = os.environ("cloudtrail_bucket")
+TIME                = datetime.datetime.utcnow()
+AMZ_DATE            = TIME.strftime('%Y%m%dT%H%M%SZ')
+DATE_STAMP          = TIME.strftime('%Y%m%d')
+PROFILE             = 'sandbox'
+LOG_LEVEL           = logging.DEBUG
 SUCCESS = "SUCCESS"
 FAILED  = "FAILED"
+
+try:
+    SESSION = boto3.session.Session(
+        profile_name=PROFILE,
+        region_name='us-east-1'
+    )
+except ProfileNotFound as pnf:
+    SESSION = boto3.session.Session()
 
 
 try:
@@ -63,30 +71,13 @@ def send(event, context, response_status, reason=None, response_data=None, physi
         print("Failed executing HTTP request: {}".format(exc.code))
         return False
 
-def create_session():
-    """Establish an AWS session through boto3
-    """
-    try:
-        session = boto3.session.Session(
-            profile_name=PROFILE,
-            region_name='us-east-1'
-        )
-    except ProfileNotFound as pnf:
-        session = boto3.session.Session()
 
-    return session
-
-
-def save_query(sdk_session, cloudtrail_logs_bucket):
+def save_query(cloudtrail_logs_bucket):
     """Store the CloudTrail table creation query
     """
-    if sdk_session.get_credentials()._is_expired():
-        sdk_session = create_session()
-        athena = sdk_session.client('athena')
-    else:
-        athena = sdk_session.client('athena')
+    athena = SESSION.client('athena')
 
-    acct_number = sdk_session.client('sts').get_caller_identity().get('Account')
+    acct_number = SESSION.client('sts').get_caller_identity().get('Account')
     query_list = athena.list_named_queries()
     name_list = []
 
@@ -95,7 +86,7 @@ def save_query(sdk_session, cloudtrail_logs_bucket):
             NamedQueryId=query
         )
         name_list.append(check['NamedQuery'].get('Name'))
-    
+
     if "cloudtrail_logs" in name_list:
         print("This query is already saved.")
     else:
@@ -165,18 +156,14 @@ location 's3://{cloudtrail_bucket}/AWSLogs/{account_number}/CloudTrail/'
 .format(cloudtrail_bucket=cloudtrail_logs_bucket,
         account_number=acct_number)
         )
-        
+
         return response
 
 
-def build_database(sdk_session, s3_bucket):
+def build_database(s3_bucket):
     """Build the logs database in Athena
     """
-    if sdk_session.get_credentials()._is_expired():
-        sdk_session = create_session()
-        athena = sdk_session.client('athena')
-    else:
-        athena = sdk_session.client('athena')
+    athena = SESSION.client('athena')
 
     output = 's3://{s3_bucket}/tables'.format(s3_bucket=s3_bucket)
     config = {
@@ -185,21 +172,17 @@ def build_database(sdk_session, s3_bucket):
             'EncryptionOption': 'SSE_S3'
         }
     }
-    
+
     response = athena.start_query_execution(
         QueryString="create database if not exists logs;",
         ResultConfiguration=config
     )
 
 
-def execute_cloudtrail_table_creation(sdk_session, s3_bucket):
+def execute_cloudtrail_table_creation(s3_bucket):
     """Create the CloudTrail Logs table using the saved query
     """
-    if sdk_session.get_credentials()._is_expired():
-        sdk_session = create_session()
-        athena = sdk_session.client('athena')
-    else:
-        athena = sdk_session.client('athena')
+    athena = SESSION.client('athena')
 
     query_list = athena.list_named_queries()
     name_list  = []
@@ -231,39 +214,40 @@ def execute_cloudtrail_table_creation(sdk_session, s3_bucket):
 def lambda_handler(event, context):
     """Lambda Handler for Build_Cloudtrail_Table
     """
-    log_level = os.environ.get('LOG_LEVEL','INFO') # Logging Level
+    logging.debug(json.dumps(event))
+
     # Setup Logging, delete other loggers
     root = logging.getLogger()
     if root.handlers:
         for handler in root.handlers:
             root.removeHandler(handler)
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=log_level, datefmt='%Y-%m-%dT%H:%M:%S')
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=LOG_LEVEL, datefmt='%Y-%m-%dT%H:%M:%S')
     logging.getLogger('boto3').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.debug("Environment Variables:")
     logging.info("Start Execution")
 
     try:
-        sess = create_session()
+        cloudtrail_bucket = os.environ["cloudtrail_bucket"]
 
-        saved = save_query(sess, cloudtrail_bucket)
+        log_level = os.environ.get('LOG_LEVEL','INFO') # Logging Level
+
+        saved = save_query(cloudtrail_bucket)
         logging.debug(saved)
-        
-        db = build_database(sess, '1s-data-lake')
+
+        db = build_database(cloudtrail_bucket)
         logging.debug(db)
-        
-        executed = execute_cloudtrail_table_creation(sess, '1s-data-lake')
+
+        executed = execute_cloudtrail_table_creation(cloudtrail_bucket)
         logging.debug(executed)
         logging.info("Successful Execution")
+        send(event, context, "SUCCESS")
 
-        send(event, context, SUCCESS)
-
-    except:
-        
-        return "Error"
-
+    except Exception as error:
         logging.info("Failed Execution")
-        send(event, context, FAILED)
+        logging.info(error)
+        send(event, context, "FAILED")
+        return "Error"
 
 
 if __name__ == '__main__':
