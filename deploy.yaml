@@ -300,7 +300,7 @@ Resources:
   SecurityFairyTableCreation:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: 'security_fairy_build_cloudtrail_table'
+      # FunctionName: 'security_fairy_build_cloudtrail_table'
       CodeUri: .
       Description: 'This function builds the required cloudtrail table in Athena'
       Handler: build_cloudtrail_table.lambda_handler
@@ -397,7 +397,7 @@ Resources:
       Environment:
         Variables:
           dynamodb_table: !Ref SecurityFairyDynamoDB
-          
+
   SecurityFairyDenyPolicy:
     Type: AWS::Serverless::Function
     Properties:
