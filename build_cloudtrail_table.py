@@ -55,7 +55,8 @@ def send(event, context, response_status, reason=None, response_data=None, physi
             'Data': {'ConfigJson': response_data}
         }
     )
-
+    logging.debug("Sending Response to CloudFormation")
+    logging.debug(response_body)
     opener = build_opener(HTTPHandler)
     request = Request(event['ResponseURL'], data=response_body)
     request.add_header('Content-Type', '')
@@ -93,9 +94,9 @@ def save_query(cloudtrail_logs_bucket):
         response = athena.create_named_query(
             Name="cloudtrail_logs",
             Description="Table of CloudTrail Logs created by Security Fairy.",
-            Database="logs",
+            Database="aws_logs",
             QueryString="""
-create external table if not exists logs.cloudtrail (
+create external table if not exists aws_logs.cloudtrail (
   eventVersion string,
   userIdentity
     struct<
