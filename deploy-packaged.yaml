@@ -25,7 +25,7 @@ Resources:
     Type: AWS::CloudFormation::CustomResource
   SecurityFairyApiApproval:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       Environment:
         Variables:
@@ -53,7 +53,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyApiEndpoint:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       Environment:
         Variables:
@@ -84,7 +84,7 @@ Resources:
     Type: AWS::StepFunctions::Activity
   SecurityFairyApprovePolicy:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       Environment:
         Variables:
@@ -103,7 +103,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyAthenaQuery:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: This function queries Athena to determine permissions
       FunctionName: security_fairy_athena_query
       Handler: athena_query.lambda_handler
@@ -116,7 +116,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyDenyPolicy:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       Environment:
         Variables:
@@ -159,7 +159,7 @@ Resources:
     Type: AWS::DynamoDB::Table
   SecurityFairyEmailApproval:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       FunctionName: security_fairy_email_approval_request
       Handler: email_approval_request.lambda_handler
@@ -172,7 +172,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyGetTaskToken:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       FunctionName: security_fairy_get_task_token
       Handler: get_task_token.lambda_handler
@@ -184,7 +184,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyPolicyGenerator:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       FunctionName: security_fairy_revised_policy_generator
       Handler: revised_policy_generator.lambda_handler
@@ -199,7 +199,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyRevertApiEndpoint:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: ''
       Environment:
         Variables:
@@ -240,7 +240,7 @@ Resources:
     Type: AWS::SNS::Topic
   SecurityFairyTableCreation:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: This function builds the required cloudtrail table in Athena
       Environment:
         Variables:
@@ -257,7 +257,7 @@ Resources:
     Type: AWS::Serverless::Function
   SecurityFairyVariableInjection:
     Properties:
-      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      CodeUri: s3://1s-potato-west/d7d3ce6a2a79fdecb64bff0b4bf1d485
       Description: This function queries Athena to determine permissions
       Environment:
         Variables:
