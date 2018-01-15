@@ -1,0 +1,322 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploys a security auditing tool
+Outputs:
+  ApiEndpoint:
+    Description: Security Fairy Invocation Endpoint
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/start
+Parameters:
+  CloudTrailS3Bucket:
+    Default: 1strategy-training-traillogs
+    Description: This is the bucket where your cloudtrail logs feed into
+    Type: String
+  SNSEmail:
+    Default: justin.iravani@1strategy.com
+    Description: The email where SNS notifications will be sent
+    Type: String
+Resources:
+  LaunchSecurityFairyTableCreation:
+    DependsOn: SecurityFairyTableCreation
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+        - SecurityFairyTableCreation
+        - Arn
+    Type: AWS::CloudFormation::CustomResource
+  SecurityFairyApiApproval:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      Environment:
+        Variables:
+          dynamodb_table:
+            Ref: SecurityFairyDynamoDB
+      Events:
+        ApprovalGetApi:
+          Properties:
+            Method: GET
+            Path: /{approval}
+          Type: Api
+        ApprovalPostApi:
+          Properties:
+            Method: POST
+            Path: /{approval}
+          Type: Api
+      FunctionName: security_fairy_api_approval
+      Handler: api_approval.lambda_handler
+      MemorySize: 512
+      Policies:
+      - AmazonDynamoDBFullAccess
+      - AWSStepFunctionsFullAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyApiEndpoint:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      Environment:
+        Variables:
+          state_machine:
+            Ref: StateMachine
+      Events:
+        GetApi:
+          Properties:
+            Method: GET
+            Path: /start
+          Type: Api
+        PostApi:
+          Properties:
+            Method: POST
+            Path: /start
+          Type: Api
+      FunctionName: security_fairy_api_endpoint
+      Handler: api_endpoint.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AdministratorAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyApprovalActivity:
+    Properties:
+      Name: security_fairy_approval_activity
+    Type: AWS::StepFunctions::Activity
+  SecurityFairyApprovePolicy:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      Environment:
+        Variables:
+          dynamodb_table:
+            Ref: SecurityFairyDynamoDB
+      FunctionName: security_fairy_revised_policy_approve
+      Handler: revised_policy_approve.lambda_handler
+      MemorySize: 128
+      Policies:
+      - IAMReadOnlyAccess
+      - AmazonDynamoDBFullAccess
+      - AdministratorAccess
+      - AWSStepFunctionsFullAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyAthenaQuery:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: This function queries Athena to determine permissions
+      FunctionName: security_fairy_athena_query
+      Handler: athena_query.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonAthenaFullAccess
+      - AmazonS3FullAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyDenyPolicy:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      Environment:
+        Variables:
+          dynamodb_table:
+            Ref: SecurityFairyDynamoDB
+      FunctionName: security_fairy_revised_policy_deny
+      Handler: revised_policy_deny.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonDynamoDBFullAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyDynamoDB:
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: execution_id
+        AttributeType: S
+      - AttributeName: entity_arn
+        AttributeType: S
+      GlobalSecondaryIndexes:
+      - IndexName: entity_arn
+        KeySchema:
+        - AttributeName: entity_arn
+          KeyType: HASH
+        Projection:
+          NonKeyAttributes:
+          - entity_arn
+          ProjectionType: INCLUDE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+      KeySchema:
+      - AttributeName: execution_id
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: security_fairy_dynamodb_table
+    Type: AWS::DynamoDB::Table
+  SecurityFairyEmailApproval:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      FunctionName: security_fairy_email_approval_request
+      Handler: email_approval_request.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonSNSFullAccess
+      - AWSStepFunctionsFullAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyGetTaskToken:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      FunctionName: security_fairy_get_task_token
+      Handler: get_task_token.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AWSStepFunctionsFullAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyPolicyGenerator:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      FunctionName: security_fairy_revised_policy_generator
+      Handler: revised_policy_generator.lambda_handler
+      MemorySize: 128
+      Policies:
+      - IAMReadOnlyAccess
+      - AmazonAthenaFullAccess
+      - AmazonDynamoDBFullAccess
+      - AmazonS3ReadOnlyAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyRevertApiEndpoint:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: ''
+      Environment:
+        Variables:
+          state_machine:
+            Ref: StateMachine
+      Events:
+        GetApi:
+          Properties:
+            Method: GET
+            Path: /revert
+          Type: Api
+        PostApi:
+          Properties:
+            Method: POST
+            Path: /revert
+          Type: Api
+      FunctionName: security_fairy_api_revert
+      Handler: revert.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AdministratorAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyS3Bucket:
+    Properties:
+      BucketName:
+        Fn::Sub: security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
+    Type: AWS::S3::Bucket
+  SecurityFairySNSTopic:
+    Properties:
+      DisplayName: SecurityFairy
+      Subscription:
+      - Endpoint:
+          Ref: SNSEmail
+        Protocol: email
+      TopicName: security_fairy_topic
+    Type: AWS::SNS::Topic
+  SecurityFairyTableCreation:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: This function builds the required cloudtrail table in Athena
+      Environment:
+        Variables:
+          cloudtrail_bucket:
+            Ref: CloudTrailS3Bucket
+      Handler: build_cloudtrail_table.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AmazonAthenaFullAccess
+      - AWSLambdaBasicExecutionRole
+      - AWSLambdaReadOnlyAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  SecurityFairyVariableInjection:
+    Properties:
+      CodeUri: s3://1s-potato-not-west/d970766f0d0e264ec3b4b3963b460b74
+      Description: This function queries Athena to determine permissions
+      Environment:
+        Variables:
+          activity_arn:
+            Fn::Sub: arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity
+          api_endpoint:
+            Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
+          dynamodb_table:
+            Ref: SecurityFairyDynamoDB
+          s3_bucket:
+            Ref: SecurityFairyS3Bucket
+          sns_arn:
+            Ref: SecurityFairySNSTopic
+      FunctionName: security_fairy_variable_injection
+      Handler: variable_injection.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      - AWSLambdaReadOnlyAccess
+      Runtime: python2.7
+      Timeout: 30
+    Type: AWS::Serverless::Function
+  StateMachine:
+    Properties:
+      DefinitionString:
+        Fn::Sub: "{\n\t\"StartAt\": \"InjectVariables\",\n\t\"States\": {\n\t\t\"\
+          InjectVariables\": {\n     \"Type\": \"Task\",\n     \"Resource\": \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_variable_injection\"\
+          ,\n     \"Next\": \"QueryAthena\"\n    },\n\t\t\"QueryAthena\": {\n\t\t\t\
+          \"Type\": \"Task\",\n\t\t\t\"Resource\": \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_athena_query\"\
+          ,\n\t\t\t\"Next\": \"WaitForQuery\"\n    },\n\t\t\"WaitForQuery\": {\n\t\
+          \t\t\"Type\": \"Wait\",\n\t\t\t\"Seconds\": 60,\n\t\t\t\"Next\": \"BuildPolicy\"\
+          \n    },\n\t\t\"BuildPolicy\": {\n\t\t\t\"Type\": \"Task\",\n\t\t\t\"Resource\"\
+          : \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_generator\"\
+          ,\n\t\t\t\"Retry\": [{\n\t\t\t\t\"ErrorEquals\": [\n\t\t\t\t\t\"States.ALL\"\
+          \n        ],\n\t\t\t\t\"IntervalSeconds\": 60,\n\t\t\t\t\"MaxAttempts\"\
+          : 3,\n\t\t\t\t\"BackoffRate\": 1.5\n      }],\n\t\t\t\"Next\": \"PromptForApproval\"\
+          \n    },\n\t\t\"PromptForApproval\": {\n\t\t\t\"Type\": \"Parallel\",\n\t\
+          \t\t\"End\": true,\n\t\t\t\"Branches\": [{\n\t\t\t\t\t\"StartAt\": \"Approval\"\
+          ,\n\t\t\t\t\t\"States\": {\n\t\t\t\t\t\t\"Approval\": {\n\t\t\t\t\t\t\t\"\
+          Type\": \"Task\",\n\t\t\t\t\t\t\t\"Resource\": \"arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity\"\
+          ,\n\t\t\t\t\t\t\t\"Catch\": [{\n\t\t\t\t\t\t\t\t\"ErrorEquals\": [\"States.TaskFailed\"\
+          , \"States.Timeout\"],\n\t\t\t\t\t\t\t\t\"Next\": \"PolicyDenial\"\n   \
+          \           }],\n\t\t\t\t\t\t\t\"Next\": \"PolicyApply\"\n            },\n\
+          \t\t\t\t\t\t\"PolicyApply\": {\n\t\t\t\t\t\t\t\"Type\": \"Task\",\n\t\t\t\
+          \t\t\t\t\"Resource\": \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_approve\"\
+          ,\n\t\t\t\t\t\t\t\"End\": true\n            },\n\t\t\t\t\t\t\"PolicyDenial\"\
+          : {\n\t\t\t\t\t\t\t\"Type\": \"Task\",\n\t\t\t\t\t\t\t\"Resource\": \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_deny\"\
+          ,\n\t\t\t\t\t\t\t\"End\": true\n            }\n          }\n        },\n\
+          \        {\n\t\t\t\t\t\"StartAt\": \"WaitForCode\",\n\t\t\t\t\t\"States\"\
+          : {\n\t\t\t\t\t\t\"WaitForCode\": {\n\t\t\t\t\t\t\t\"Type\": \"Wait\",\n\
+          \t\t\t\t\t\t\t\"Seconds\": 3,\n\t\t\t\t\t\t\t\"Next\": \"GenerateCode\"\n\
+          \            },\n\t\t\t\t\t\t\"GenerateCode\": {\n\t\t\t\t\t\t\t\"Type\"\
+          : \"Task\",\n\t\t\t\t\t\t\t\"Resource\": \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_get_task_token\"\
+          ,\n\n\t\t\t\t\t\t\t\"Next\": \"SendApprovalRequest\"\n            },\n\t\
+          \t\t\t\t\t\"SendApprovalRequest\": {\n\t\t\t\t\t\t\t\"Type\": \"Task\",\n\
+          \t\t\t\t\t\t\t\"Resource\": \"arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_email_approval_request\"\
+          ,\n\t\t\t\t\t\t\t\"End\": true\n            }\n          }\n        }\n\
+          \      ]\n    }\n  }\n}"
+      RoleArn:
+        Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+    Type: AWS::StepFunctions::StateMachine
+Transform: AWS::Serverless-2016-10-31
