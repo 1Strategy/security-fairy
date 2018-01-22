@@ -50,8 +50,12 @@ def lambda_handler(event, context):
     if query_execution_id is None:
         raise ValueError("Lambda Function requires 'query_execution_id' to execute.")
 
-    raw_query_results = get_query_results(query_execution_id)
-    aws_entity = get_entity_arn(raw_query_results)
+    try:
+        raw_query_results = get_query_results(query_execution_id)
+        aws_entity = get_entity_arn(raw_query_results)
+    except QueryStillRunning as qsr:
+        event['query_state'] = 'StillRunning'
+        return event
 
     service_level_actions = get_permissions_from_query_v2(raw_query_results)
 
