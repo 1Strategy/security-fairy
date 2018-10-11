@@ -19,8 +19,8 @@ phases:
         aws cloudformation deploy --template-file ./template-output.yaml \
             --capabilities CAPABILITY_NAMED_IAM \
             --stack-name $STACKNAME \
-            --no-fail-on-empty-changeset || 
-            # --parameter-overrides file://parameters.json \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides file://parameters.json || #\
             # --tags file://tags.json || 
             $(printf "aws cloudformation describe-stack-events \
                     --stack-name %s \
