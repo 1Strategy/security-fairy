@@ -9,6 +9,7 @@ phases:
     commands:
       - ls -lha
       - TIME=$(date -d "30 min ago" +"%FT%T.0Z")       
+      - sudo apt-get install jq
 
   build:
     commands:
