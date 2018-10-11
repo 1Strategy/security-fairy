@@ -53,6 +53,7 @@ def lambda_handler(event, context):
     try:
         raw_query_results = get_query_results(query_execution_id)
         aws_entity = get_entity_arn(raw_query_results)
+        event['query_state'] = 'QueryCompletedOrFailed'
     except QueryStillRunning as qsr:
         event['query_state'] = 'StillRunning'
         return event

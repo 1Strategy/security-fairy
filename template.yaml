@@ -110,81 +110,81 @@ Resources:
       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
       DefinitionString: !Sub |-
         {
-        	"StartAt": "InjectVariables",
-        	"States": {
-        		"InjectVariables": {
-             "Type": "Task",
-             "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_variable_injection",
-             "Next": "QueryAthena"
+          "StartAt": "InjectVariables",
+          "States": {
+            "InjectVariables": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_variable_injection",
+            "Next": "QueryAthena"
             },
-        		"QueryAthena": {
-        			"Type": "Task",
-        			"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_athena_query",
-        			"Next": "WaitForQuery"
+            "QueryAthena": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_athena_query",
+              "Next": "WaitForQuery"
             },
-        		"WaitForQuery": {
-        			"Type": "Wait",
-        			"Seconds": 60,
-        			"Next": "BuildPolicy"
+            "WaitForQuery": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "BuildPolicy"
             },
-        		"BuildPolicy": {
-        			"Type": "Task",
-        			"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_generator",
-        			"Retry": [{
-        				"ErrorEquals": [
-        					"States.ALL"
+            "BuildPolicy": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_generator",
+              "Retry": [{
+                "ErrorEquals": [
+                  "States.ALL"
                 ],
-        				"IntervalSeconds": 60,
-        				"MaxAttempts": 3,
-        				"BackoffRate": 1.5
+                "IntervalSeconds": 60,
+                "MaxAttempts": 3,
+                "BackoffRate": 1.5
               }],
-        			"Next": "PromptForApproval"
+              "Next": "PromptForApproval"
             },
-        		"PromptForApproval": {
-        			"Type": "Parallel",
-        			"End": true,
-        			"Branches": [{
-        					"StartAt": "Approval",
-        					"States": {
-        						"Approval": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity",
-        							"Catch": [{
-        								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
-        								"Next": "PolicyDenial"
+            "PromptForApproval": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [{
+                  "StartAt": "Approval",
+                  "States": {
+                    "Approval": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity",
+                      "Catch": [{
+                        "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+                        "Next": "PolicyDenial"
                       }],
-        							"Next": "PolicyApply"
+                      "Next": "PolicyApply"
                     },
-        						"PolicyApply": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_approve",
-        							"End": true
+                    "PolicyApply": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_approve",
+                      "End": true
                     },
-        						"PolicyDenial": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_deny",
-        							"End": true
+                    "PolicyDenial": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_deny",
+                      "End": true
                     }
                   }
                 },
                 {
-        					"StartAt": "WaitForCode",
-        					"States": {
-        						"WaitForCode": {
-        							"Type": "Wait",
-        							"Seconds": 3,
-        							"Next": "GenerateCode"
+                  "StartAt": "WaitForCode",
+                  "States": {
+                    "WaitForCode": {
+                      "Type": "Wait",
+                      "Seconds": 3,
+                      "Next": "GenerateCode"
                     },
-        						"GenerateCode": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_get_task_token",
+                    "GenerateCode": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_get_task_token",
 
-        							"Next": "SendApprovalRequest"
+                      "Next": "SendApprovalRequest"
                     },
-        						"SendApprovalRequest": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_email_approval_request",
-        							"End": true
+                    "SendApprovalRequest": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_email_approval_request",
+                      "End": true
                     }
                   }
                 }
