@@ -2,15 +2,13 @@ version: 0.2
 env:
   variables:
     STACKNAME: "security-fairy"
-    DEPLOY_BUCKET: "1s-potato"
+    DEPLOY_BUCKET: "1s-potato-not-west"
 
 phases:
   pre_build:
     commands:
       - ls -lha
-      - cat buildspec.yml
-
-      
+      - TIME=$(date -d "30 min ago" +"%FT%T.0Z")       
 
   build:
     commands:
@@ -19,9 +17,9 @@ phases:
         aws cloudformation deploy --template-file template-output.yaml \
             --capabilities CAPABILITY_NAMED_IAM \
             --stack-name $STACKNAME \
-            --no-fail-on-empty-changeset \
-            --parameter-overrides file://parameters.json \
-            --tags file://tags.json || 
+            --no-fail-on-empty-changeset || 
+            # --parameter-overrides file://parameters.json \
+            # --tags file://tags.json || 
             $(printf "aws cloudformation describe-stack-events \
                     --stack-name %s \
                     --output table \
@@ -29,5 +27,5 @@ phases:
   post_build:
     commands:
       # Capture CloudFormation outputs in ./tests/cloudformation-outputs.json
-      - aws cloudformation describe-stacks --stack-name ${STACKNAME} --query 'Stacks[*].Outputs' | jq '.[]' > ./cloudformation-outputs.json
+      - aws cloudformation describe-stacks --stack-name ${STACKNAME} --query 'Stacks[*].Outputs' | jq '.[]' > cloudformation-outputs.json
 
