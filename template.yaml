@@ -11,6 +11,7 @@ Parameters:
 
   SNSEmail:
     Type: String
+    Default: justin@1strategy.com
     Description: The email where SNS notifications will be sent
 
 Resources:
