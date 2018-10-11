@@ -123,7 +123,7 @@ class AWSEntity(Arn):
          Arn.__init__(self, entity_arn, logging_level = logging_level)
 
 
-def create_logger(name = __name__, logging_level=logging.INFO):
+def create_logger(name = 'aws_entity', logging_level=logging.INFO):
     logger = logging.getLogger(name)
     logger.setLevel(logging_level)
 
