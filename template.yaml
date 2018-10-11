@@ -6,7 +6,7 @@ Parameters:
 
   CloudTrailS3Bucket:
     Type: String
-    Default: 1strategy-training-traillogs
+    Default: 1strategy-training.cloudtrial
     Description: This is the bucket where your cloudtrail logs feed into
 
   SNSEmail:
