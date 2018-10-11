@@ -1,9 +1,11 @@
+import sys
+sys.path.insert(0,'..')
 import logging
 import pytest
 import json
-from security_fairy_tools import IAMPolicy
-from security_fairy_tools import IAMStatement
-from security_fairy_tools import Arn
+from aws_iam_policy import IAMPolicy
+from aws_iam_policy import IAMStatement
+from aws_entity import Arn
 
 logging_level = logging.INFO
 # statement = IAMStatement('Allow',["pot:atosoup","goat:cheese"],'*', logging_level = logging_level)

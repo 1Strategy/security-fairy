@@ -17,18 +17,18 @@ Todo:
     * Variable injection
     * Data collection
 """
-
-
+import sys
+sys.path.insert(0,'..')
 import pytest
-from security_fairy.security_fairy_api_approval import lambda_handler as api_approval
-from security_fairy.security_fairy_api_endpoint import lambda_handler as api_endpoint
-from security_fairy.security_fairy_athena_query import lambda_handler as athena_query
-from security_fairy.security_fairy_email_approval_request import lambda_handler as email_approval_request
-from security_fairy.security_fairy_get_task_token import lambda_handler as get_task_token
-from security_fairy.security_fairy_revised_policy_approve import lambda_handler as revised_policy_approve
-from security_fairy.security_fairy_revised_policy_deny import lambda_handler as revised_policy_deny
-from security_fairy.security_fairy_revised_policy_generator import lambda_handler as revised_policy_generator
-from security_fairy.security_fairy_variable_injection import lambda_handler as variable_injection
+from api_approval import lambda_handler as api_approval
+from api_endpoint import lambda_handler as api_endpoint
+from athena_query import lambda_handler as athena_query
+from email_approval_request import lambda_handler as email_approval_request
+from get_task_token import lambda_handler as get_task_token
+from revised_policy_approve import lambda_handler as revised_policy_approve
+from revised_policy_deny import lambda_handler as revised_policy_deny
+from revised_policy_generator import lambda_handler as revised_policy_generator
+from variable_injection import lambda_handler as variable_injection
 
 
 class TestLambdaHandlers(object):
