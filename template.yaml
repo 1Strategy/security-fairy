@@ -114,12 +114,12 @@ Resources:
           "States": {
             "InjectVariables": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_variable_injection",
+            "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_variable_injection",
             "Next": "QueryAthena"
             },
             "QueryAthena": {
               "Type": "Task",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_athena_query",
+              "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_athena_query",
               "Next": "WaitForQuery"
             },
             "WaitForQuery": {
@@ -129,7 +129,7 @@ Resources:
             },
             "BuildPolicy": {
               "Type": "Task",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_generator",
+              "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_revised_policy_generator",
               "Retry": [{
                 "ErrorEquals": [
                   "States.ALL"
@@ -138,7 +138,17 @@ Resources:
                 "MaxAttempts": 3,
                 "BackoffRate": 1.5
               }],
-              "Next": "PromptForApproval"
+              "Next": "QueryFinish?"
+            },
+            "QueryFinish?": {
+              "Type" : "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.query_state",
+                  "StringEquals": "StillRunning",
+                  "Next": "WaitForQuery"
+                }],
+                "Default": "PromptForApproval"
             },
             "PromptForApproval": {
               "Type": "Parallel",
@@ -148,7 +158,7 @@ Resources:
                   "States": {
                     "Approval": {
                       "Type": "Task",
-                      "Resource": "arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity",
+                      "Resource": "arn:aws:states:us-east-1:842337631775:activity:security_fairy_approval_activity",
                       "Catch": [{
                         "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
                         "Next": "PolicyDenial"
@@ -157,12 +167,12 @@ Resources:
                     },
                     "PolicyApply": {
                       "Type": "Task",
-                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_approve",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_revised_policy_approve",
                       "End": true
                     },
                     "PolicyDenial": {
                       "Type": "Task",
-                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_deny",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_revised_policy_deny",
                       "End": true
                     }
                   }
@@ -177,13 +187,13 @@ Resources:
                     },
                     "GenerateCode": {
                       "Type": "Task",
-                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_get_task_token",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_get_task_token",
 
                       "Next": "SendApprovalRequest"
                     },
                     "SendApprovalRequest": {
                       "Type": "Task",
-                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_email_approval_request",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_email_approval_request",
                       "End": true
                     }
                   }
@@ -192,7 +202,6 @@ Resources:
             }
           }
         }
-
   #############################################################################
   ## LAMBDA FUNCTIONS                                                        ##
   #############################################################################
