@@ -35,10 +35,10 @@ Resources:
   ## S3 BUCKET                                                               ##
   #############################################################################
 
-  # SecurityFairyS3Bucket:
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     BucketName: !Sub security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
+  SecurityFairyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub security-fairy-bucket-${AWS::Region}-${AWS::AccountId}
 
 #   SecurityFairyS3BucketPolicy:
 #     Type: "AWS::S3::BucketPolicy"
@@ -271,7 +271,7 @@ Resources:
           sns_arn: !Ref SecurityFairySNSTopic
           dynamodb_table: !Ref SecurityFairyDynamoDB
           activity_arn: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity
-          # s3_bucket: !Ref SecurityFairyS3Bucket
+          s3_bucket: !Ref SecurityFairyS3Bucket
           api_endpoint: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
 
   SecurityFairyAthenaQuery:
