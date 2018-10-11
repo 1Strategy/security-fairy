@@ -1,0 +1,33 @@
+version: 0.2
+env:
+  variables:
+    STACKNAME: "security-fairy"
+    DEPLOY_BUCKET: "1s-potato"
+
+phases:
+  pre_build:
+    commands:
+      - ls -lha
+      - cat buildspec.yml
+
+      
+
+  build:
+    commands:
+      - aws cloudformation package --template-file template.yaml --output-template-file template-output.yaml --s3-bucket ${DEPLOY_BUCKET} --s3-prefix ${PREFIX} --region us-west-2
+      - >
+        aws cloudformation deploy --template-file template-output.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --stack-name $STACKNAME \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides file://parameters.json \
+            --tags file://tags.json || 
+            $(printf "aws cloudformation describe-stack-events \
+                    --stack-name %s \
+                    --output table \
+                    --query 'StackEvents[?Timestamp >= \`%s\`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]'" $STACKNAME $TIME | sh && exit 1)
+  post_build:
+    commands:
+      # Capture CloudFormation outputs in ./tests/cloudformation-outputs.json
+      - aws cloudformation describe-stacks --stack-name ${STACKNAME} --query 'Stacks[*].Outputs' | jq '.[]' > ./cloudformation-outputs.json
+
