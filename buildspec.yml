@@ -14,9 +14,9 @@ phases:
 
   build:
     commands:
-      - aws cloudformation package --template-file template.yaml --output-template-file template-output.yaml --s3-bucket ${DEPLOY_BUCKET}
+      - aws cloudformation package --template-file ./template.yaml --output-template-file ./template-output.yaml --s3-bucket ${DEPLOY_BUCKET}
       - >
-        aws cloudformation deploy --template-file template-output.yaml \
+        aws cloudformation deploy --template-file ./template-output.yaml \
             --capabilities CAPABILITY_NAMED_IAM \
             --stack-name $STACKNAME \
             --no-fail-on-empty-changeset || 
