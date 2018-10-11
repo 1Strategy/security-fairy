@@ -6,12 +6,10 @@ Parameters:
 
   CloudTrailS3Bucket:
     Type: String
-    Default: 1strategy-training.cloudtrial
     Description: This is the bucket where your cloudtrail logs feed into
 
   SNSEmail:
     Type: String
-    Default: justin@1strategy.com
     Description: The email where SNS notifications will be sent
 
 Resources:
@@ -308,6 +306,7 @@ Resources:
 
   LaunchSecurityFairyTableCreation:
     Type: AWS::CloudFormation::CustomResource
+    DeletionPolicy: Retain
     DependsOn: SecurityFairyTableCreation
     Properties:
       ServiceToken: !GetAtt SecurityFairyTableCreation.Arn
