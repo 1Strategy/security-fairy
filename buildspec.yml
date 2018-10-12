@@ -12,7 +12,7 @@ phases:
       - sudo apt-get update
       - sudo apt-get -y install unzip jq
       - sudo pip install --upgrade pip
-      - sudo pip install requests
+      - sudo pip install requests -t .
 
   build:
     commands:
