@@ -1,0 +1,4 @@
+[
+    "CloudTrailS3Bucket=1strategy-sandbox.cloudtrial",
+    "SNSEmail=justin@1strategy.com"
+]

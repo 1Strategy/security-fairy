@@ -6,7 +6,6 @@ Parameters:
 
   CloudTrailS3Bucket:
     Type: String
-    Default: 1strategy-training-traillogs
     Description: This is the bucket where your cloudtrail logs feed into
 
   SNSEmail:
@@ -111,81 +110,91 @@ Resources:
       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
       DefinitionString: !Sub |-
         {
-        	"StartAt": "InjectVariables",
-        	"States": {
-        		"InjectVariables": {
-             "Type": "Task",
-             "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_variable_injection",
-             "Next": "QueryAthena"
+          "StartAt": "InjectVariables",
+          "States": {
+            "InjectVariables": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_variable_injection",
+            "Next": "QueryAthena"
             },
-        		"QueryAthena": {
-        			"Type": "Task",
-        			"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_athena_query",
-        			"Next": "WaitForQuery"
+            "QueryAthena": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_athena_query",
+              "Next": "WaitForQuery"
             },
-        		"WaitForQuery": {
-        			"Type": "Wait",
-        			"Seconds": 60,
-        			"Next": "BuildPolicy"
+            "WaitForQuery": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "BuildPolicy"
             },
-        		"BuildPolicy": {
-        			"Type": "Task",
-        			"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_generator",
-        			"Retry": [{
-        				"ErrorEquals": [
-        					"States.ALL"
+            "BuildPolicy": {
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_revised_policy_generator",
+              "Retry": [{
+                "ErrorEquals": [
+                  "States.ALL"
                 ],
-        				"IntervalSeconds": 60,
-        				"MaxAttempts": 3,
-        				"BackoffRate": 1.5
+                "IntervalSeconds": 60,
+                "MaxAttempts": 3,
+                "BackoffRate": 1.5
               }],
-        			"Next": "PromptForApproval"
+              "Next": "QueryFinish?"
             },
-        		"PromptForApproval": {
-        			"Type": "Parallel",
-        			"End": true,
-        			"Branches": [{
-        					"StartAt": "Approval",
-        					"States": {
-        						"Approval": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:states:${AWS::Region}:${AWS::AccountId}:activity:security_fairy_approval_activity",
-        							"Catch": [{
-        								"ErrorEquals": ["States.TaskFailed", "States.Timeout"],
-        								"Next": "PolicyDenial"
+            "QueryFinish?": {
+              "Type" : "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.query_state",
+                  "StringEquals": "StillRunning",
+                  "Next": "WaitForQuery"
+                }],
+                "Default": "PromptForApproval"
+            },
+            "PromptForApproval": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [{
+                  "StartAt": "Approval",
+                  "States": {
+                    "Approval": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:states:us-east-1:842337631775:activity:security_fairy_approval_activity",
+                      "Catch": [{
+                        "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+                        "Next": "PolicyDenial"
                       }],
-        							"Next": "PolicyApply"
+                      "Next": "PolicyApply"
                     },
-        						"PolicyApply": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_approve",
-        							"End": true
+                    "PolicyApply": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_revised_policy_approve",
+                      "End": true
                     },
-        						"PolicyDenial": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_revised_policy_deny",
-        							"End": true
+                    "PolicyDenial": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_revised_policy_deny",
+                      "End": true
                     }
                   }
                 },
                 {
-        					"StartAt": "WaitForCode",
-        					"States": {
-        						"WaitForCode": {
-        							"Type": "Wait",
-        							"Seconds": 3,
-        							"Next": "GenerateCode"
+                  "StartAt": "WaitForCode",
+                  "States": {
+                    "WaitForCode": {
+                      "Type": "Wait",
+                      "Seconds": 3,
+                      "Next": "GenerateCode"
                     },
-        						"GenerateCode": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_get_task_token",
+                    "GenerateCode": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_get_task_token",
 
-        							"Next": "SendApprovalRequest"
+                      "Next": "SendApprovalRequest"
                     },
-        						"SendApprovalRequest": {
-        							"Type": "Task",
-        							"Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:security_fairy_email_approval_request",
-        							"End": true
+                    "SendApprovalRequest": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:us-east-1:842337631775:function:security_fairy_email_approval_request",
+                      "End": true
                     }
                   }
                 }
@@ -193,7 +202,6 @@ Resources:
             }
           }
         }
-
   #############################################################################
   ## LAMBDA FUNCTIONS                                                        ##
   #############################################################################
@@ -290,7 +298,7 @@ Resources:
   SecurityFairyTableCreation:
     Type: AWS::Serverless::Function
     Properties:
-      # FunctionName: 'security_fairy_build_cloudtrail_table'
+      FunctionName: 'security_fairy_build_cloudtrail_table'
       CodeUri: .
       Description: 'This function builds the required cloudtrail table in Athena'
       Handler: build_cloudtrail_table.lambda_handler
@@ -307,6 +315,7 @@ Resources:
 
   LaunchSecurityFairyTableCreation:
     Type: AWS::CloudFormation::CustomResource
+    DeletionPolicy: Retain
     DependsOn: SecurityFairyTableCreation
     Properties:
       ServiceToken: !GetAtt SecurityFairyTableCreation.Arn
