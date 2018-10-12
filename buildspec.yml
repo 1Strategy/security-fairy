@@ -11,6 +11,7 @@ phases:
       - TIME=$(date -d "30 min ago" +"%FT%T.0Z")       
       - sudo apt-get update
       - sudo apt-get -y install unzip jq
+      - pip install -r requirements.txt
 
   build:
     commands:
