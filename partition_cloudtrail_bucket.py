@@ -60,7 +60,7 @@ def lambda_handler(events, context):
     for region in regions:
         try:
             response = athena_client.start_query_execution(
-                QueryString=f"ALTER TABLE cloudtrail ADD PARTITION (region={region}, year={year}, month={month}, day={day})",
+                QueryString=f"ALTER TABLE cloudtrail ADD PARTITION (region={region}, year={year}, month={month}, day={day}) LOCATION 's3://{s3_bucket}/AWSLogs/{account}/CloudTrail/{region}/{year}/{month}/{day}/'",
                 ResultConfiguration=config
             )
             #change to logger
