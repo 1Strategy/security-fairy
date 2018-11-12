@@ -26,6 +26,7 @@ except ProfileNotFound as pnf:
 
 def lambda_handler(events, context):
     s3_bucket = os.environ['s3_bucket']
+    account = os.environ['AWS_ACCOUNT']
     athena_client = SESSION.client('athena')
 
     output = f"s3://{s3_bucket}/security-fairy-partition-queries"
