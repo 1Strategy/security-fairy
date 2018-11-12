@@ -148,6 +148,7 @@ create external table if not exists aws_logs.cloudtrail (
   sharedEventID string,
   vpcEndpointId string
 )
+partitioned by (region STRING, year STRING, month STRING, day STRING)
 row format serde 'com.amazon.emr.hive.serde.CloudTrailSerde'
 stored as inputformat 'com.amazon.emr.cloudtrail.CloudTrailInputFormat'
 outputformat 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
