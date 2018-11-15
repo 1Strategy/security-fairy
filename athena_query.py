@@ -7,6 +7,7 @@ query to Athena.
 import re
 import boto3
 import logging
+from datetime import datetime, timedelta
 from setup_logger import create_logger
 from botocore.exceptions import ProfileNotFound
 
@@ -33,17 +34,32 @@ def lambda_handler(event, context):
     return event
 
 
+def window_calc(num_days):
+    """Calculate the correct year,
+    month, and day for the query
+    """
+    delta = timedelta(days=num_days)
+    today = datetime.now()
+    query_date = today - delta
+    year = query_date.year
+    month = query_date.month
+
+    return year, month
+
+
 def execute_query(entity_arn, num_days, s3_bucket):
     """Submit and run query"""
 
     escaped_arn = build_escaped_arn(entity_arn)
+    year, month = window_calc(num_days)
 
     hql = f"""
        select useridentity.arn as user_arn
             , eventsource
             , array_distinct(array_agg(eventName)) as actions
          from aws_logs.cloudtrail
-        where date_parse(eventTime, '%Y-%m-%dT%TZ') >= current_date + interval '{num_days}' day
+        where year = '{year}'
+          and month >= '{month}'
           and regexp_like(useridentity.arn, '{escaped_arn}\/.+')
      group by useridentity.arn
             , eventsource
@@ -77,7 +93,6 @@ def build_escaped_arn(entity_arn):
 
 if __name__ == '__main__':
     # arn:aws:sts::281782457076:assumed-role\/1s_tear_down_role\/.+
-
     lambda_handler(
         {
             "entity_arn": "arn:aws:iam::281782457076:assumed-role/1s_tear_down_role",
