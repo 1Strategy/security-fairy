@@ -38,7 +38,7 @@ def execute_query(entity_arn, num_days, s3_bucket):
 
     escaped_arn = build_escaped_arn(entity_arn)
 
-    hql = """
+    hql = f"""
        select useridentity.arn as user_arn
             , eventsource
             , array_distinct(array_agg(eventName)) as actions
@@ -47,7 +47,7 @@ def execute_query(entity_arn, num_days, s3_bucket):
           and regexp_like(useridentity.arn, '{escaped_arn}\/.+')
      group by useridentity.arn
             , eventsource
-          """.format(num_days=num_days, escaped_arn=escaped_arn)
+          """
     logger.info(hql)
 
     output = 's3://{s3_bucket}/tables'.format(s3_bucket=s3_bucket)
