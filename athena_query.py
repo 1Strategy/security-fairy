@@ -94,7 +94,6 @@ def build_escaped_arn(entity_arn):
 
 if __name__ == '__main__':
     # arn:aws:sts::281782457076:assumed-role\/1s_tear_down_role\/.+
-    execute_query()
     # lambda_handler(
     #     {
     #         "entity_arn": "arn:aws:iam::281782457076:assumed-role/1s_tear_down_role",
