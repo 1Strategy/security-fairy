@@ -305,13 +305,16 @@ Resources:
       MemorySize: 128
       Policies:
       - AmazonAthenaFullAccess
+      - AmazonS3FullAccess
       - AWSLambdaBasicExecutionRole
       - AWSLambdaReadOnlyAccess
       Runtime: python2.7
       Timeout: 30
       Environment:
         Variables:
+          aws_account: !Ref AWS::AccountId
           cloudtrail_bucket: !Ref CloudTrailS3Bucket
+          security_fairy_bucket: !Ref SecurityFairyS3Bucket
 
   LaunchSecurityFairyTableCreation:
     Type: AWS::CloudFormation::CustomResource
@@ -425,6 +428,28 @@ Resources:
       Timeout: 30
       Policies:
       - AWSStepFunctionsFullAccess
+  SecurityFairyCloudTrailAutoPartition:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: 'security_fairy_partition_cloudtrail_bucket'
+      CodeUri:  .
+      Description: ''
+      Handler: partition_cloudtrail_bucket.lambda_handler
+      MemorySize: 128
+      Policies:
+      - AdministratorAccess
+      Runtime: python3.6
+      Timeout: 30
+      Environment:
+        Variables:
+          aws_account: !Ref AWS::AccountId
+          cloudtrail_bucket: !Ref CloudTrailS3Bucket
+          security_fairy_bucket: !Ref SecurityFairyS3Bucket
+      Events:
+        DailyRun:
+          Type: Schedule
+          Properties:
+            Schedule: cron(10 0 * * ? *)
 
 Outputs:
   ApiEndpoint:
