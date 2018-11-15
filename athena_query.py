@@ -50,7 +50,7 @@ def execute_query(entity_arn, num_days, s3_bucket):
           """
     logger.info(hql)
 
-    output = 's3://{s3_bucket}/tables'.format(s3_bucket=s3_bucket)
+    output = f's3://{s3_bucket}/tables'
     config = {
         'OutputLocation': output,
         'EncryptionConfiguration': {
