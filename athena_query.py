@@ -38,7 +38,8 @@ def window_calc(num_days):
     """Calculate the correct year,
     month, and day for the query
     """
-    delta = timedelta(days=num_days)
+    days = abs(num_days)
+    delta = timedelta(days=days)
     today = datetime.now()
     query_date = today - delta
     year = query_date.year
@@ -93,11 +94,12 @@ def build_escaped_arn(entity_arn):
 
 if __name__ == '__main__':
     # arn:aws:sts::281782457076:assumed-role\/1s_tear_down_role\/.+
-    lambda_handler(
-        {
-            "entity_arn": "arn:aws:iam::281782457076:assumed-role/1s_tear_down_role",
-            "num_days": "-30",
-            "s3_bucket": "1s-potato-east"
-        },
-        {}
-    )
+    execute_query()
+    # lambda_handler(
+    #     {
+    #         "entity_arn": "arn:aws:iam::281782457076:assumed-role/1s_tear_down_role",
+    #         "num_days": "-30",
+    #         "s3_bucket": "1s-potato-east"
+    #     },
+    #     {}
+    # )
