@@ -292,7 +292,7 @@ Resources:
       Policies:
       - AmazonAthenaFullAccess
       - AmazonS3FullAccess
-      Runtime: python2.7
+      Runtime: python3.6
       Timeout: 30
 
   SecurityFairyTableCreation:
