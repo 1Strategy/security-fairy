@@ -10,7 +10,7 @@ See the AWS documentation for Athena here:
 import os
 import sys
 import json
-import datetime
+from datetime import datetime
 import logging
 import boto3
 from botocore.exceptions import ProfileNotFound
@@ -175,7 +175,7 @@ def build_database(s3_bucket):
     }
 
     response = athena.start_query_execution(
-        QueryString="create database if not exists logs;",
+        QueryString="create database if not exists aws_logs;",
         ResultConfiguration=config
     )
 
@@ -211,6 +211,49 @@ def execute_cloudtrail_table_creation(s3_bucket):
 
     return response
 
+def build_inital_partitions(security_fairy_bucket, cloudtrail_bucket, account):
+    output = f"s3://{security_fairy_bucket}/security-fairy-partition-queries"
+    year = datetime.now().year
+    month = datetime.now().month
+    day = datetime.now().day
+    regions =  ['us-west-2',
+                'us-west-1',
+                'us-east-2',
+                'us-east-1',
+                # 'ap-south-1',
+                # 'ap-northeast-2',
+                # 'ap-southeast-1',
+                # 'ap-southeast-2',
+                # 'ap-northeast-1',
+                # 'ca-central-1',
+                # 'cn-north-1',
+                # 'eu-central-1',
+                # 'eu-west-1',
+                # 'eu-west-2',
+                # 'eu-west-3',
+                # 'sa-east-1',
+                # 'us-gov-west-1'
+    ]
+                
+    config = {
+        'OutputLocation': output,
+        'EncryptionConfiguration': {
+            'EncryptionOption': 'SSE_S3'
+        }
+    }
+
+    for region in regions:
+        try:
+            for x in range(30):
+                new_time = datetime.now() - timedelta(x)
+                response = athena_client.start_query_execution(
+                    QueryString = f"ALTER TABLE cloudtrail ADD PARTITION IF NOT EXISTS (region='{region}', year={new_time.year}, month={new_time.month}, day={new_time.day}) LOCATION 's3://{cloudtrail_bucket}/AWSLogs/{account}/CloudTrail/{region}/{new_time.year}/{new_time.month}/{new_time.day}/'; "
+                    ResultConfiguration=config
+                )
+            #change to logger
+            print(response)
+        except Exception as e:
+            print(e)
 
 def lambda_handler(event, context):
     """Lambda Handler for Build_Cloudtrail_Table
@@ -230,7 +273,8 @@ def lambda_handler(event, context):
 
     try:
         cloudtrail_bucket = os.environ["cloudtrail_bucket"]
-
+        security_fairy_bucket = os.environ["security_fairy_bucket"]
+        account = os.environ["aws_account"]
         log_level = os.environ.get('LOG_LEVEL','INFO') # Logging Level
 
         saved = save_query(cloudtrail_bucket)
@@ -240,6 +284,9 @@ def lambda_handler(event, context):
         logging.debug(db)
 
         executed = execute_cloudtrail_table_creation(cloudtrail_bucket)
+        
+        build_inital_partitions(security_fairy_bucket, cloudtrail_bucket, account)
+        
         logging.debug(executed)
         logging.info("Successful Execution")
         send(event, context, "SUCCESS")
