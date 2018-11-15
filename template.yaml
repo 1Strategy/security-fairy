@@ -308,7 +308,7 @@ Resources:
       - AmazonS3FullAccess
       - AWSLambdaBasicExecutionRole
       - AWSLambdaReadOnlyAccess
-      Runtime: python2.7
+      Runtime: python3.6
       Timeout: 30
       Environment:
         Variables:
