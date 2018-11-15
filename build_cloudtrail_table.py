@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import logging
 import boto3
 from botocore.exceptions import ProfileNotFound
+from time import sleep
 
 
 # These parameters should remain static
@@ -212,6 +213,9 @@ def execute_cloudtrail_table_creation(s3_bucket):
     return response
 
 def build_inital_partitions(security_fairy_bucket, cloudtrail_bucket, account):
+    
+    athena_client = SESSION.client('athena')
+
     output = f"s3://{security_fairy_bucket}/security-fairy-partition-queries"
     year = datetime.now().year
     month = datetime.now().month
@@ -246,10 +250,12 @@ def build_inital_partitions(security_fairy_bucket, cloudtrail_bucket, account):
         try:
             for x in range(30):
                 new_time = datetime.now() - timedelta(x)
+                # sleep(.5)
                 response = athena_client.start_query_execution(
                     QueryString = f"ALTER TABLE cloudtrail ADD PARTITION IF NOT EXISTS (region='{region}', year={new_time.year}, month={new_time.month}, day={new_time.day}) LOCATION 's3://{cloudtrail_bucket}/AWSLogs/{account}/CloudTrail/{region}/{new_time.year}/{new_time.month}/{new_time.day}/'; ",
                     ResultConfiguration=config
                 )
+                
             #change to logger
             print(response)
         except Exception as e:
