@@ -10,7 +10,7 @@ See the AWS documentation for Athena here:
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import boto3
 from botocore.exceptions import ProfileNotFound
