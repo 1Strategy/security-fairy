@@ -17,7 +17,7 @@ from botocore.exceptions import ProfileNotFound
 
 
 # These parameters should remain static
-TIME                = datetime.datetime.utcnow()
+TIME                = datetime.utcnow()
 AMZ_DATE            = TIME.strftime('%Y%m%dT%H%M%SZ')
 DATE_STAMP          = TIME.strftime('%Y%m%d')
 PROFILE             = 'sandbox'
