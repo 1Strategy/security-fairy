@@ -50,7 +50,7 @@ def send(event, context, response_status, reason=None, response_data=None, physi
             'Reason': reason or "See the details in CloudWatch Log Stream: " + context.log_stream_name,
             'PhysicalResourceId': physical_resource_id or context.log_stream_name,
             'StackId': event['StackId'],
-            'RequestId': event['RequestId'],
+            'RequestId': event['RequestId']
             'LogicalResourceId': event['LogicalResourceId'],
             'Data': {'ConfigJson': response_data}
         }
@@ -58,9 +58,9 @@ def send(event, context, response_status, reason=None, response_data=None, physi
     logging.debug("Sending Response to CloudFormation")
     logging.debug(response_body)
     opener = build_opener(HTTPHandler)
-    request = Request(event['ResponseURL'], data=response_body)
+    request = Request(event['ResponseURL'], data=response_body.encode('utf-8'))
     request.add_header('Content-Type', '')
-    request.add_header('Content-Length', len(response_body))
+    request.add_header('Content-Length', len(response_body.encode('utf-8'))
     request.get_method = lambda: 'PUT'
     response = opener.open(request)
     try:
