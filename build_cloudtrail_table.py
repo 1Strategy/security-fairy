@@ -36,7 +36,7 @@ except ProfileNotFound as pnf:
 
 
 try:
-    from urllib2 import HTTPError, build_opener, HTTPHandler, Request
+    from urllib import HTTPError, build_opener, HTTPHandler, Request
 except ImportError:
     from urllib.error import HTTPError
     from urllib.request import build_opener, HTTPHandler, Request
