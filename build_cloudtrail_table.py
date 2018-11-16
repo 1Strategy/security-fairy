@@ -252,7 +252,7 @@ def build_inital_partitions(security_fairy_bucket, cloudtrail_bucket, account):
                 new_time = datetime.now() - timedelta(x)
                 # sleep(.5)
                 response = athena_client.start_query_execution(
-                    QueryString = f"ALTER TABLE cloudtrail ADD IF NOT EXISTS PARTITION (region='{region}', year={new_time.year}, month={new_time.month}, day={new_time.day}) LOCATION 's3://{cloudtrail_bucket}/AWSLogs/{account}/CloudTrail/{region}/{new_time.year}/{new_time.month}/{new_time.day}/'; ",
+                    QueryString = f"ALTER TABLE aws_logs.cloudtrail ADD IF NOT EXISTS PARTITION (region='{region}', year={new_time.year}, month={new_time.month}, day={new_time.day}) LOCATION 's3://{cloudtrail_bucket}/AWSLogs/{account}/CloudTrail/{region}/{new_time.year}/{new_time.month}/{new_time.day}/'; ",
                     ResultConfiguration=config
                 )
                 
