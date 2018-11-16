@@ -309,7 +309,7 @@ Resources:
       - AWSLambdaBasicExecutionRole
       - AWSLambdaReadOnlyAccess
       Runtime: python3.6
-      Timeout: 30
+      Timeout: 300
       Environment:
         Variables:
           aws_account: !Ref AWS::AccountId
