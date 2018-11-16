@@ -60,7 +60,7 @@ def send(event, context, response_status, reason=None, response_data=None, physi
     opener = build_opener(HTTPHandler)
     request = Request(event['ResponseURL'], data=response_body.encode('utf-8'))
     request.add_header('Content-Type', '')
-    request.add_header('Content-Length', len(response_body.encode('utf-8'))
+    request.add_header('Content-Length', len(response_body.encode('utf-8')))
     request.get_method = lambda: 'PUT'
     response = opener.open(request)
     try:
