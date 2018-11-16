@@ -50,7 +50,7 @@ def send(event, context, response_status, reason=None, response_data=None, physi
             'Reason': reason or "See the details in CloudWatch Log Stream: " + context.log_stream_name,
             'PhysicalResourceId': physical_resource_id or context.log_stream_name,
             'StackId': event['StackId'],
-            'RequestId': event['RequestId']
+            'RequestId': event['RequestId'],
             'LogicalResourceId': event['LogicalResourceId'],
             'Data': {'ConfigJson': response_data}
         }
