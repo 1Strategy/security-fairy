@@ -45,7 +45,7 @@ def window_calc(num_days):
     year = query_date.year
     month = query_date.month
 
-    return year, month
+    return year, str(month).zfill(2)
 
 
 def execute_query(entity_arn, num_days, s3_bucket):

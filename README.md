@@ -1,3 +1,7 @@
+## TODO
+- Ingrate lambda layers for the requests package (no longer supported in boto3)
+- Update to python 3.7
+
 ## Scoping Permissions
 
 While IAM is a fantastic way to protect your AWS Resources/Accounts, properly scoping IAM Policies can be very difficult. There are two general approaches to correctly scoping permissions:

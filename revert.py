@@ -14,7 +14,7 @@ from boto3.dynamodb.conditions  import Key
 logger = create_logger(name = "revert.py", logging_level=logging.INFO)
 
 try:
-    SESSION = boto3.session.Session(profile_name='training',
+    SESSION = boto3.session.Session(profile_name='sandbox',
                                     region_name='us-east-1')
 except ProfileNotFound as pnf:
     SESSION = boto3.session.Session()
